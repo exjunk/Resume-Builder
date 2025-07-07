@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Structured Resume Builder</title>
+    <title>Enhanced Resume Builder with Profiles</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
@@ -99,6 +99,12 @@
             gap: 20px;
         }
 
+        .form-row-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
         label {
             display: block;
             margin-bottom: 8px;
@@ -144,6 +150,12 @@
             box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .btn-secondary {
             background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
         }
@@ -161,6 +173,51 @@
             font-size: 12px;
         }
 
+        .btn-mini {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        .dropdown-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .dropdown-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .profile-preview {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+
+        .profile-preview h4 {
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .profile-preview p {
+            margin: 4px 0;
+            color: #666;
+            font-size: 14px;
+        }
+
         .dynamic-section {
             border: 1px solid #e0e0e0;
             border-radius: 10px;
@@ -171,7 +228,7 @@
 
         .dynamic-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
         }
@@ -221,6 +278,12 @@
             color: #721c24;
         }
 
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
         .hidden {
             display: none !important;
         }
@@ -245,35 +308,76 @@
             color: #333;
         }
 
-        .tag-input-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            margin-bottom: 10px;
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
         }
 
-        .tag {
-            background: #4facfe;
-            color: white;
-            padding: 4px 12px;
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
             border-radius: 15px;
-            font-size: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close {
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
+            margin-top: 10px;
         }
 
-        .tag-remove {
-            cursor: pointer;
-            font-weight: bold;
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
         }
 
         @media (max-width: 768px) {
-            .form-row, .form-row-3 {
+            .form-row, .form-row-3, .form-row-4 {
                 grid-template-columns: 1fr;
             }
             
             .main-content {
+                padding: 20px;
+            }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
                 padding: 20px;
             }
         }
@@ -282,17 +386,67 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 Structured Resume Builder</h1>
-            <p>Generate ATS-optimized resumes with structured JSON data</p>
+            <h1>🎯 Enhanced Resume Builder</h1>
+            <p>Manage profiles, templates, and create ATS-optimized resumes</p>
         </div>
 
         <div class="main-content">
-            <!-- Input Form -->
-            <div id="inputForm">
+            <!-- Profile & Template Selection -->
+            <div id="selectionForm">
+                <div class="step">
+                    <div class="step-header">
+                        <div class="step-number">👤</div>
+                        <div class="step-title">Profile & Template Selection</div>
+                    </div>
+                    
+                    <!-- Profile Selection -->
+                    <div class="dropdown-section">
+                        <div class="dropdown-header">
+                            <div class="dropdown-title">👤 Select Profile</div>
+                            <div>
+                                <button class="btn btn-small btn-secondary" onclick="openProfileModal()">+ New Profile</button>
+                                <button class="btn btn-small" onclick="openProfileModal('edit')" id="editProfileBtn" disabled>✏️ Edit</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <select id="profileSelect" onchange="loadSelectedProfile()">
+                                <option value="">Choose a profile...</option>
+                            </select>
+                        </div>
+                        
+                        <div id="profilePreview" class="profile-preview hidden">
+                            <!-- Profile preview will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Template Selection -->
+                    <div class="dropdown-section">
+                        <div class="dropdown-header">
+                            <div class="dropdown-title">📝 Select Resume Template</div>
+                            <div>
+                                <button class="btn btn-small btn-secondary" onclick="openTemplateModal()">+ New Template</button>
+                                <button class="btn btn-small" onclick="openTemplateModal('edit')" id="editTemplateBtn" disabled>✏️ Edit</button>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <select id="templateSelect" onchange="loadSelectedTemplate()">
+                                <option value="">Choose a template...</option>
+                            </select>
+                        </div>
+                        
+                        <div id="templatePreview" class="profile-preview hidden">
+                            <!-- Template preview will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Job Details -->
                 <div class="step">
                     <div class="step-header">
                         <div class="step-number">1</div>
-                        <div class="step-title">Resume Input</div>
+                        <div class="step-title">Job Details</div>
                     </div>
                     
                     <div class="form-row">
@@ -310,28 +464,16 @@
                         <label for="jobDescription">Job Description *</label>
                         <textarea id="jobDescription" placeholder="Paste the complete job description here..."></textarea>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="resumeText">Current Resume Content *</label>
-                        <textarea id="resumeText" placeholder="Paste your current resume content here..."></textarea>
+                <!-- Actions -->
+                <div class="step">
+                    <div class="step-header">
+                        <div class="step-number">⚡</div>
+                        <div class="step-title">Generate Resume</div>
                     </div>
-
-                    <div class="form-row-3">
-                        <div class="form-group">
-                            <label for="fullName">Full Name *</label>
-                            <input type="text" id="fullName" placeholder="John Doe">
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email *</label>
-                            <input type="email" id="email" placeholder="john@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone</label>
-                            <input type="text" id="phone" placeholder="+1 (555) 123-4567">
-                        </div>
-                    </div>
-
-                    <button class="btn" onclick="generateStructuredResume()">🎯 Generate Structured Resume</button>
+                    
+                    <button class="btn btn-success" onclick="generateStructuredResume()">🎯 Generate Optimized Resume</button>
                     <button class="btn btn-secondary" onclick="loadSampleData()">📝 Load Sample Data</button>
                 </div>
             </div>
@@ -428,7 +570,7 @@
                         <div class="step-title">Actions</div>
                     </div>
                     
-                    <button class="btn btn-success" onclick="saveStructuredResume()">💾 Save Resume</button>
+                    <button class="btn btn-success" onclick="saveAsNewTemplate()">💾 Save as Template</button>
                     <button class="btn" onclick="exportToPDF()">📄 Export to PDF</button>
                     <button class="btn btn-secondary" onclick="exportToJSON()">📋 Export JSON</button>
                     <button class="btn btn-danger" onclick="resetForm()">🔄 Reset</button>
@@ -437,10 +579,111 @@
         </div>
     </div>
 
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="profileModalTitle">Create New Profile</div>
+                <span class="close" onclick="closeProfileModal()">&times;</span>
+            </div>
+            
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="modalProfileName">Profile Name *</label>
+                    <input type="text" id="modalProfileName" placeholder="e.g., Personal Profile, Work Profile">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modalFullName">Full Name *</label>
+                        <input type="text" id="modalFullName" placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="modalEmail">Email *</label>
+                        <input type="email" id="modalEmail" placeholder="john@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="modalLinkedin">LinkedIn URL</label>
+                        <input type="url" id="modalLinkedin" placeholder="https://linkedin.com/in/profile">
+                    </div>
+                    <div class="form-group">
+                        <label for="modalLocation">Location</label>
+                        <input type="text" id="modalLocation" placeholder="New York, NY">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mobile Numbers</label>
+                    <div id="modalMobileContainer"></div>
+                    <button type="button" class="btn btn-small" onclick="addModalMobileNumber()">+ Add Number</button>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="modalIsDefault">
+                    <label for="modalIsDefault">Set as default profile</label>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="button" class="btn btn-success" onclick="saveProfile()">💾 Save Profile</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteProfile()" id="deleteProfileBtn" style="display: none;">🗑️ Delete</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">❌ Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Template Modal -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="templateModalTitle">Create New Template</div>
+                <span class="close" onclick="closeTemplateModal()">&times;</span>
+            </div>
+            
+            <form id="templateForm">
+                <div class="form-group">
+                    <label for="modalTemplateName">Template Name *</label>
+                    <input type="text" id="modalTemplateName" placeholder="e.g., Software Developer Template">
+                </div>
+                
+                <div class="form-group">
+                    <label for="modalResumeContent">Resume Content *</label>
+                    <textarea id="modalResumeContent" placeholder="Paste your base resume content here..." style="height: 200px;"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="modalProfessionalSummary">Professional Summary</label>
+                    <textarea id="modalProfessionalSummary" placeholder="Professional summary template..."></textarea>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="modalTemplateIsDefault">
+                    <label for="modalTemplateIsDefault">Set as default template</label>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="button" class="btn btn-success" onclick="saveTemplate()">💾 Save Template</button>
+                    <button type="button" class="btn btn-danger" onclick="deleteTemplate()" id="deleteTemplateBtn" style="display: none;">🗑️ Delete</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeTemplateModal()">❌ Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        // Global variables
         let structuredResumeData = null;
         let currentResumeUuid = null;
         let authToken = localStorage.getItem('authToken');
+        let userProfiles = [];
+        let resumeTemplates = [];
+        let currentProfileUuid = null;
+        let currentTemplateUuid = null;
+        let editingProfileUuid = null;
+        let editingTemplateUuid = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -448,24 +691,503 @@
                 showAlert('Please log in first', 'error');
                 return;
             }
+            
+            loadUserProfiles();
+            loadResumeTemplates();
         });
 
-        // Generate structured resume
+        // Profile Management Functions
+        async function loadUserProfiles() {
+            try {
+                const response = await fetch('/api/profiles', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    userProfiles = data.profiles;
+                    populateProfileDropdown();
+                } else {
+                    console.error('Failed to load profiles:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading profiles:', error);
+            }
+        }
+
+        function populateProfileDropdown() {
+            const select = document.getElementById('profileSelect');
+            select.innerHTML = '<option value="">Choose a profile...</option>';
+            
+            userProfiles.forEach(profile => {
+                const option = document.createElement('option');
+                option.value = profile.profile_uuid;
+                option.textContent = `${profile.profile_name}${profile.is_default ? ' (Default)' : ''}`;
+                select.appendChild(option);
+            });
+
+            // Auto-select default profile
+            const defaultProfile = userProfiles.find(p => p.is_default);
+            if (defaultProfile) {
+                select.value = defaultProfile.profile_uuid;
+                loadSelectedProfile();
+            }
+        }
+
+        async function loadSelectedProfile() {
+            const profileUuid = document.getElementById('profileSelect').value;
+            const editBtn = document.getElementById('editProfileBtn');
+            
+            if (!profileUuid) {
+                document.getElementById('profilePreview').classList.add('hidden');
+                editBtn.disabled = true;
+                currentProfileUuid = null;
+                return;
+            }
+
+            currentProfileUuid = profileUuid;
+            editBtn.disabled = false;
+
+            const profile = userProfiles.find(p => p.profile_uuid === profileUuid);
+            if (profile) {
+                displayProfilePreview(profile);
+            }
+        }
+
+        function displayProfilePreview(profile) {
+            const preview = document.getElementById('profilePreview');
+            preview.innerHTML = `
+                <h4>${profile.profile_name}</h4>
+                <p><strong>Name:</strong> ${profile.full_name}</p>
+                <p><strong>Email:</strong> ${profile.email}</p>
+                <p><strong>Mobile:</strong> ${profile.mobile_numbers.join(', ') || 'Not provided'}</p>
+                <p><strong>LinkedIn:</strong> ${profile.linkedin_url || 'Not provided'}</p>
+                <p><strong>Location:</strong> ${profile.location || 'Not provided'}</p>
+            `;
+            preview.classList.remove('hidden');
+        }
+
+        // Template Management Functions
+        async function loadResumeTemplates() {
+            try {
+                const response = await fetch('/api/templates', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resumeTemplates = data.templates;
+                    populateTemplateDropdown();
+                } else {
+                    console.error('Failed to load templates:', data.error);
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        function populateTemplateDropdown() {
+            const select = document.getElementById('templateSelect');
+            select.innerHTML = '<option value="">Choose a template...</option>';
+            
+            resumeTemplates.forEach(template => {
+                const option = document.createElement('option');
+                option.value = template.template_uuid;
+                option.textContent = `${template.template_name}${template.is_default ? ' (Default)' : ''}`;
+                select.appendChild(option);
+            });
+
+            // Auto-select default template
+            const defaultTemplate = resumeTemplates.find(t => t.is_default);
+            if (defaultTemplate) {
+                select.value = defaultTemplate.template_uuid;
+                loadSelectedTemplate();
+            }
+        }
+
+        async function loadSelectedTemplate() {
+            const templateUuid = document.getElementById('templateSelect').value;
+            const editBtn = document.getElementById('editTemplateBtn');
+            
+            if (!templateUuid) {
+                document.getElementById('templatePreview').classList.add('hidden');
+                editBtn.disabled = true;
+                currentTemplateUuid = null;
+                return;
+            }
+
+            currentTemplateUuid = templateUuid;
+            editBtn.disabled = false;
+
+            const template = resumeTemplates.find(t => t.template_uuid === templateUuid);
+            if (template) {
+                displayTemplatePreview(template);
+            }
+        }
+
+        function displayTemplatePreview(template) {
+            const preview = document.getElementById('templatePreview');
+            const contentPreview = template.resume_content ? 
+                template.resume_content.substring(0, 150) + '...' : 'No content';
+            
+            preview.innerHTML = `
+                <h4>${template.template_name}</h4>
+                <p><strong>Summary:</strong> ${template.professional_summary || 'Not provided'}</p>
+                <p><strong>Content:</strong> ${contentPreview}</p>
+                <p><strong>Created:</strong> ${new Date(template.created_at).toLocaleDateString()}</p>
+            `;
+            preview.classList.remove('hidden');
+        }
+
+        // Modal Functions
+        function openProfileModal(mode = 'create') {
+            const modal = document.getElementById('profileModal');
+            const title = document.getElementById('profileModalTitle');
+            const deleteBtn = document.getElementById('deleteProfileBtn');
+            
+            if (mode === 'edit' && currentProfileUuid) {
+                title.textContent = 'Edit Profile';
+                deleteBtn.style.display = 'inline-block';
+                editingProfileUuid = currentProfileUuid;
+                
+                const profile = userProfiles.find(p => p.profile_uuid === currentProfileUuid);
+                if (profile) {
+                    populateProfileModal(profile);
+                }
+            } else {
+                title.textContent = 'Create New Profile';
+                deleteBtn.style.display = 'none';
+                editingProfileUuid = null;
+                clearProfileModal();
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').style.display = 'none';
+            clearProfileModal();
+        }
+
+        function populateProfileModal(profile) {
+            document.getElementById('modalProfileName').value = profile.profile_name;
+            document.getElementById('modalFullName').value = profile.full_name;
+            document.getElementById('modalEmail').value = profile.email;
+            document.getElementById('modalLinkedin').value = profile.linkedin_url || '';
+            document.getElementById('modalLocation').value = profile.location || '';
+            document.getElementById('modalIsDefault').checked = profile.is_default;
+            
+            populateModalMobileNumbers(profile.mobile_numbers);
+        }
+
+        function clearProfileModal() {
+            document.getElementById('profileForm').reset();
+            document.getElementById('modalMobileContainer').innerHTML = '';
+            addModalMobileNumber(); // Add one empty field
+            editingProfileUuid = null;
+        }
+
+        function populateModalMobileNumbers(numbers) {
+            const container = document.getElementById('modalMobileContainer');
+            container.innerHTML = '';
+            
+            if (numbers && numbers.length > 0) {
+                numbers.forEach(number => addModalMobileNumber(number));
+            } else {
+                addModalMobileNumber('');
+            }
+        }
+
+        function addModalMobileNumber(value = '') {
+            const container = document.getElementById('modalMobileContainer');
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.gap = '10px';
+            div.style.marginBottom = '10px';
+            div.innerHTML = `
+                <input type="text" placeholder="Mobile number" value="${value}" style="flex: 1;">
+                <button type="button" class="btn btn-mini btn-danger" onclick="removeModalMobileNumber(this)">×</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeModalMobileNumber(button) {
+            button.parentElement.remove();
+            
+            // Ensure at least one field exists
+            const container = document.getElementById('modalMobileContainer');
+            if (container.children.length === 0) {
+                addModalMobileNumber('');
+            }
+        }
+
+        async function saveProfile() {
+            const profileName = document.getElementById('modalProfileName').value.trim();
+            const fullName = document.getElementById('modalFullName').value.trim();
+            const email = document.getElementById('modalEmail').value.trim();
+            
+            if (!profileName || !fullName || !email) {
+                showAlert('Profile name, full name, and email are required', 'error');
+                return;
+            }
+
+            const mobileInputs = document.querySelectorAll('#modalMobileContainer input');
+            const mobileNumbers = Array.from(mobileInputs)
+                .map(input => input.value.trim())
+                .filter(num => num);
+
+            const profileData = {
+                profileName,
+                fullName,
+                email,
+                mobileNumbers,
+                linkedinUrl: document.getElementById('modalLinkedin').value.trim(),
+                location: document.getElementById('modalLocation').value.trim(),
+                isDefault: document.getElementById('modalIsDefault').checked
+            };
+
+            try {
+                const url = editingProfileUuid ? 
+                    `/api/profiles/${editingProfileUuid}` : '/api/profiles';
+                const method = editingProfileUuid ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`Profile ${editingProfileUuid ? 'updated' : 'created'} successfully!`, 'success');
+                    closeProfileModal();
+                    await loadUserProfiles();
+                } else {
+                    showAlert(data.error || 'Failed to save profile', 'error');
+                }
+            } catch (error) {
+                showAlert('Error saving profile: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteProfile() {
+            if (!editingProfileUuid) return;
+            
+            if (!confirm('Are you sure you want to delete this profile?')) return;
+
+            try {
+                const response = await fetch(`/api/profiles/${editingProfileUuid}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Profile deleted successfully!', 'success');
+                    closeProfileModal();
+                    await loadUserProfiles();
+                } else {
+                    showAlert(data.error || 'Failed to delete profile', 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting profile: ' + error.message, 'error');
+            }
+        }
+
+        // Template Modal Functions
+        function openTemplateModal(mode = 'create') {
+            const modal = document.getElementById('templateModal');
+            const title = document.getElementById('templateModalTitle');
+            const deleteBtn = document.getElementById('deleteTemplateBtn');
+            
+            if (mode === 'edit' && currentTemplateUuid) {
+                title.textContent = 'Edit Template';
+                deleteBtn.style.display = 'inline-block';
+                editingTemplateUuid = currentTemplateUuid;
+                
+                loadTemplateForEditing(currentTemplateUuid);
+            } else {
+                title.textContent = 'Create New Template';
+                deleteBtn.style.display = 'none';
+                editingTemplateUuid = null;
+                clearTemplateModal();
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeTemplateModal() {
+            document.getElementById('templateModal').style.display = 'none';
+            clearTemplateModal();
+        }
+
+        async function loadTemplateForEditing(templateUuid) {
+            try {
+                const response = await fetch(`/api/templates/${templateUuid}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const template = data.template;
+                    document.getElementById('modalTemplateName').value = template.template_name;
+                    document.getElementById('modalResumeContent').value = template.resume_content;
+                    document.getElementById('modalProfessionalSummary').value = template.professional_summary || '';
+                    document.getElementById('modalTemplateIsDefault').checked = template.is_default;
+                } else {
+                    showAlert(data.error || 'Failed to load template', 'error');
+                }
+            } catch (error) {
+                showAlert('Error loading template: ' + error.message, 'error');
+            }
+        }
+
+        function clearTemplateModal() {
+            document.getElementById('templateForm').reset();
+            editingTemplateUuid = null;
+        }
+
+        async function saveTemplate() {
+            const templateName = document.getElementById('modalTemplateName').value.trim();
+            const resumeContent = document.getElementById('modalResumeContent').value.trim();
+            
+            if (!templateName || !resumeContent) {
+                showAlert('Template name and resume content are required', 'error');
+                return;
+            }
+
+            const templateData = {
+                templateName,
+                resumeContent,
+                professionalSummary: document.getElementById('modalProfessionalSummary').value.trim(),
+                skills: [], // Will be populated from form data if needed
+                experience: [],
+                education: [],
+                isDefault: document.getElementById('modalTemplateIsDefault').checked
+            };
+
+            try {
+                const url = editingTemplateUuid ? 
+                    `/api/templates/${editingTemplateUuid}` : '/api/templates';
+                const method = editingTemplateUuid ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(templateData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`Template ${editingTemplateUuid ? 'updated' : 'created'} successfully!`, 'success');
+                    closeTemplateModal();
+                    await loadResumeTemplates();
+                } else {
+                    showAlert(data.error || 'Failed to save template', 'error');
+                }
+            } catch (error) {
+                showAlert('Error saving template: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteTemplate() {
+            if (!editingTemplateUuid) return;
+            
+            if (!confirm('Are you sure you want to delete this template?')) return;
+
+            try {
+                const response = await fetch(`/api/templates/${editingTemplateUuid}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Template deleted successfully!', 'success');
+                    closeTemplateModal();
+                    await loadResumeTemplates();
+                } else {
+                    showAlert(data.error || 'Failed to delete template', 'error');
+                }
+            } catch (error) {
+                showAlert('Error deleting template: ' + error.message, 'error');
+            }
+        }
+
+        // Resume Generation Functions
         async function generateStructuredResume() {
             const jobDescription = document.getElementById('jobDescription').value.trim();
-            const resumeText = document.getElementById('resumeText').value.trim();
-            const fullName = document.getElementById('fullName').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const phone = document.getElementById('phone').value.trim();
+            const resumeTitle = document.getElementById('resumeTitle').value.trim();
+            const companyName = document.getElementById('companyName').value.trim();
 
-            if (!jobDescription || !resumeText || !fullName || !email) {
-                showAlert('Please fill in all required fields', 'error');
+            if (!jobDescription || !resumeTitle || !companyName) {
+                showAlert('Please fill in job description, resume title, and company name', 'error');
+                return;
+            }
+
+            if (!currentProfileUuid) {
+                showAlert('Please select a profile first', 'error');
+                return;
+            }
+
+            if (!currentTemplateUuid) {
+                showAlert('Please select a resume template first', 'error');
                 return;
             }
 
             showLoading();
 
             try {
+                // Fetch full template content from backend
+                const templateResponse = await fetch(`/api/templates/${currentTemplateUuid}`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const templateData = await templateResponse.json();
+
+                if (!templateResponse.ok) {
+                    throw new Error(templateData.error || 'Failed to load template');
+                }
+
+                const template = templateData.template;
+                let resumeContent = template.resume_content || '';
+
+                // If template content is empty, provide a basic structure
+                if (!resumeContent.trim()) {
+                    resumeContent = `Professional Summary:
+${template.professional_summary || 'Experienced professional seeking new opportunities.'}
+
+Experience:
+[Previous work experience will be enhanced based on job requirements]
+
+Skills:
+[Skills will be optimized based on job description]
+
+Education:
+[Educational background]
+`;
+                }
+
+                console.log('Sending to backend:', {
+                    jobDescription: jobDescription.substring(0, 100) + '...',
+                    resumeContentLength: resumeContent.length,
+                    profileUuid: currentProfileUuid,
+                    templateUuid: currentTemplateUuid
+                });
+
                 const response = await fetch('/api/optimize-resume-json', {
                     method: 'POST',
                     headers: {
@@ -474,8 +1196,9 @@
                     },
                     body: JSON.stringify({
                         jobDescription,
-                        resumeText,
-                        personalInfo: { fullName, email, phone }
+                        resumeText: resumeContent,
+                        profileUuid: currentProfileUuid,
+                        templateUuid: currentTemplateUuid
                     })
                 });
 
@@ -493,10 +1216,156 @@
             } catch (error) {
                 hideLoading();
                 showAlert('Error: ' + error.message, 'error');
+                console.error('Full error:', error);
             }
         }
 
-        // Populate the form with structured data
+        // Save current form data as new template
+        async function saveAsNewTemplate() {
+            const formData = collectFormData();
+            
+            const templateName = prompt('Enter a name for this template:');
+            if (!templateName) return;
+
+            const templateData = {
+                templateName,
+                resumeContent: generateResumeText(formData),
+                professionalSummary: formData.professionalSummary,
+                skills: formData.skills,
+                experience: formData.professionalExperience,
+                education: formData.education,
+                isDefault: false
+            };
+
+            try {
+                const response = await fetch('/api/templates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(templateData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Template saved successfully!', 'success');
+                    await loadResumeTemplates();
+                } else {
+                    showAlert(data.error || 'Failed to save template', 'error');
+                }
+            } catch (error) {
+                showAlert('Error saving template: ' + error.message, 'error');
+            }
+        }
+
+        function generateResumeText(formData) {
+            let text = `${formData.name}\n`;
+            text += `${formData.email} | ${formData.mobileNumbers.join(' | ')} | ${formData.linkedinUrl}\n\n`;
+            
+            if (formData.professionalSummary) {
+                text += `PROFESSIONAL SUMMARY\n${formData.professionalSummary}\n\n`;
+            }
+            
+            if (formData.professionalExperience.length > 0) {
+                text += `PROFESSIONAL EXPERIENCE\n`;
+                formData.professionalExperience.forEach(exp => {
+                    text += `${exp.jobDesignation} | ${exp.jobName} | ${exp.term}\n`;
+                    exp.jobDetails.forEach(detail => {
+                        text += `• ${detail}\n`;
+                    });
+                    text += '\n';
+                });
+            }
+            
+            if (formData.skills.length > 0) {
+                text += `SKILLS\n`;
+                formData.skills.forEach(skillCategory => {
+                    text += `${skillCategory.skillName}: ${skillCategory.skills.join(', ')}\n`;
+                });
+                text += '\n';
+            }
+            
+            if (formData.education.length > 0) {
+                text += `EDUCATION\n`;
+                formData.education.forEach(edu => {
+                    text += `${edu.degree} | ${edu.collegeName} | ${edu.tenure}\n`;
+                });
+            }
+            
+            return text;
+        }
+
+        // Existing functions (populateResumeForm, collectFormData, etc.) remain the same...
+        // [Include all the existing functions from the previous implementation]
+
+        // Load sample data
+        function loadSampleData() {
+            document.getElementById('resumeTitle').value = 'Senior Full Stack Developer at TechCorp';
+            document.getElementById('companyName').value = 'TechCorp Inc.';
+            
+            document.getElementById('jobDescription').value = `We are seeking a Senior Full Stack Developer to join our growing team. 
+
+Required Skills:
+- 5+ years of experience in full-stack development
+- Proficiency in JavaScript, React, Node.js
+- Experience with databases (PostgreSQL, MongoDB)
+- Knowledge of cloud platforms (AWS, Azure)
+- Strong problem-solving skills
+- Experience with Agile methodologies
+
+Responsibilities:
+- Develop and maintain web applications
+- Collaborate with cross-functional teams
+- Mentor junior developers
+- Participate in code reviews
+- Optimize application performance`;
+
+            showAlert('Sample data loaded successfully!', 'success');
+        }
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loadingSection').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSection').classList.add('hidden');
+        }
+
+        function showResumeForm() {
+            document.getElementById('selectionForm').classList.add('hidden');
+            document.getElementById('resumeForm').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            if (confirm('Are you sure you want to reset the form? All changes will be lost.')) {
+                location.reload();
+            }
+        }
+
+        function showAlert(message, type = 'error') {
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = message;
+            
+            const mainContent = document.querySelector('.main-content');
+            mainContent.insertBefore(alert, mainContent.firstChild);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Add remaining resume form functions here...
+        // (populateResumeForm, mobile number management, experience management, etc.)
+        // [These functions remain the same as in the previous implementation]
+
+        // Resume form management functions
         function populateResumeForm(data) {
             document.getElementById('formName').value = data.name || '';
             document.getElementById('formEmail').value = data.email || '';
@@ -514,6 +1383,53 @@
             
             // Populate education
             populateEducation(data.education || []);
+        }
+
+        function collectFormData() {
+            // Personal info
+            const name = document.getElementById('formName').value;
+            const email = document.getElementById('formEmail').value;
+            const linkedin = document.getElementById('formLinkedin').value;
+            const summary = document.getElementById('formSummary').value;
+
+            // Mobile numbers
+            const mobileInputs = document.querySelectorAll('#mobileNumbersContainer input');
+            const mobileNumbers = Array.from(mobileInputs).map(input => input.value.trim()).filter(num => num);
+
+            // Experience
+            const experienceItems = document.querySelectorAll('#experienceContainer .array-item');
+            const professionalExperience = Array.from(experienceItems).map(item => ({
+                jobName: item.querySelector('[name="jobName"]').value,
+                jobDesignation: item.querySelector('[name="jobDesignation"]').value,
+                term: item.querySelector('[name="term"]').value,
+                jobDetails: item.querySelector('[name="jobDetails"]').value.split('\n').filter(detail => detail.trim())
+            })).filter(exp => exp.jobName || exp.jobDesignation);
+
+            // Skills
+            const skillItems = document.querySelectorAll('#skillsContainer .array-item');
+            const skills = Array.from(skillItems).map(item => ({
+                skillName: item.querySelector('[name="skillName"]').value,
+                skills: item.querySelector('[name="skills"]').value.split(',').map(s => s.trim()).filter(s => s)
+            })).filter(skill => skill.skillName);
+
+            // Education
+            const educationItems = document.querySelectorAll('#educationContainer .array-item');
+            const education = Array.from(educationItems).map(item => ({
+                degree: item.querySelector('[name="degree"]').value,
+                collegeName: item.querySelector('[name="collegeName"]').value,
+                tenure: item.querySelector('[name="tenure"]').value
+            })).filter(edu => edu.degree || edu.collegeName);
+
+            return {
+                name,
+                email,
+                mobileNumbers,
+                linkedinUrl: linkedin,
+                professionalSummary: summary,
+                professionalExperience,
+                skills,
+                education
+            };
         }
 
         // Mobile numbers management
@@ -542,7 +1458,7 @@
             div.className = 'form-group';
             div.innerHTML = `
                 <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-                    <input type="text" placeholder="Mobile number" value="${value}" onchange="updateMobileNumbers()">
+                    <input type="text" placeholder="Mobile number" value="${value}">
                     <button type="button" class="btn btn-small btn-danger" onclick="removeMobileNumber(this)">×</button>
                 </div>
             `;
@@ -551,16 +1467,6 @@
 
         function removeMobileNumber(button) {
             button.closest('.form-group').remove();
-            updateMobileNumbers();
-        }
-
-        function updateMobileNumbers() {
-            const inputs = document.querySelectorAll('#mobileNumbersContainer input');
-            const numbers = Array.from(inputs).map(input => input.value.trim()).filter(num => num);
-            
-            if (structuredResumeData) {
-                structuredResumeData.mobileNumbers = numbers;
-            }
         }
 
         // Experience management
@@ -714,90 +1620,7 @@
             button.closest('.array-item').remove();
         }
 
-        // Collect form data
-        function collectFormData() {
-            // Personal info
-            const name = document.getElementById('formName').value;
-            const email = document.getElementById('formEmail').value;
-            const linkedin = document.getElementById('formLinkedin').value;
-            const summary = document.getElementById('formSummary').value;
-
-            // Mobile numbers
-            const mobileInputs = document.querySelectorAll('#mobileNumbersContainer input');
-            const mobileNumbers = Array.from(mobileInputs).map(input => input.value.trim()).filter(num => num);
-
-            // Experience
-            const experienceItems = document.querySelectorAll('#experienceContainer .array-item');
-            const professionalExperience = Array.from(experienceItems).map(item => ({
-                jobName: item.querySelector('[name="jobName"]').value,
-                jobDesignation: item.querySelector('[name="jobDesignation"]').value,
-                term: item.querySelector('[name="term"]').value,
-                jobDetails: item.querySelector('[name="jobDetails"]').value.split('\n').filter(detail => detail.trim())
-            })).filter(exp => exp.jobName || exp.jobDesignation);
-
-            // Skills
-            const skillItems = document.querySelectorAll('#skillsContainer .array-item');
-            const skills = Array.from(skillItems).map(item => ({
-                skillName: item.querySelector('[name="skillName"]').value,
-                skills: item.querySelector('[name="skills"]').value.split(',').map(s => s.trim()).filter(s => s)
-            })).filter(skill => skill.skillName);
-
-            // Education
-            const educationItems = document.querySelectorAll('#educationContainer .array-item');
-            const education = Array.from(educationItems).map(item => ({
-                degree: item.querySelector('[name="degree"]').value,
-                collegeName: item.querySelector('[name="collegeName"]').value,
-                tenure: item.querySelector('[name="tenure"]').value
-            })).filter(edu => edu.degree || edu.collegeName);
-
-            return {
-                name,
-                email,
-                mobileNumbers,
-                linkedinUrl: linkedin,
-                professionalSummary: summary,
-                professionalExperience,
-                skills,
-                education
-            };
-        }
-
-        // Save structured resume
-        async function saveStructuredResume() {
-            const formData = collectFormData();
-            
-            if (!currentResumeUuid) {
-                showAlert('No resume UUID available. Please generate a new resume first.', 'error');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/save-structured-resume', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        resumeUuid: currentResumeUuid,
-                        structuredData: formData
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showAlert('Resume saved successfully!', 'success');
-                    structuredResumeData = formData;
-                } else {
-                    throw new Error(data.error || 'Failed to save resume');
-                }
-            } catch (error) {
-                showAlert('Error saving resume: ' + error.message, 'error');
-            }
-        }
-
-        // Export to PDF
+        // Export functions
         function exportToPDF() {
             const formData = collectFormData();
             
@@ -947,7 +1770,6 @@
             }
         }
 
-        // Export to JSON
         function exportToJSON() {
             const formData = collectFormData();
             
@@ -960,113 +1782,6 @@
             link.click();
             
             showAlert('JSON exported successfully!', 'success');
-        }
-
-        // Load sample data
-        function loadSampleData() {
-            document.getElementById('resumeTitle').value = 'Senior Full Stack Developer at TechCorp';
-            document.getElementById('companyName').value = 'TechCorp Inc.';
-            document.getElementById('fullName').value = 'John Smith';
-            document.getElementById('email').value = 'john.smith@email.com';
-            document.getElementById('phone').value = '+1 (555) 123-4567';
-            
-            document.getElementById('jobDescription').value = `We are seeking a Senior Full Stack Developer to join our growing team. 
-
-Required Skills:
-- 5+ years of experience in full-stack development
-- Proficiency in JavaScript, React, Node.js
-- Experience with databases (PostgreSQL, MongoDB)
-- Knowledge of cloud platforms (AWS, Azure)
-- Strong problem-solving skills
-- Experience with Agile methodologies
-
-Responsibilities:
-- Develop and maintain web applications
-- Collaborate with cross-functional teams
-- Mentor junior developers
-- Participate in code reviews
-- Optimize application performance`;
-
-            document.getElementById('resumeText').value = `John Smith
-john.smith@email.com | (555) 123-4567
-
-PROFESSIONAL SUMMARY
-Experienced Full Stack Developer with 6 years of experience building scalable web applications. Expertise in JavaScript, React, and Node.js.
-
-EXPERIENCE
-
-Senior Developer | ABC Corp | 2022 - Present
-- Developed 5+ React applications serving 50k+ users
-- Improved performance by 40% through optimization
-- Led team of 3 junior developers
-
-Software Engineer | XYZ Inc | 2019 - 2022
-- Built responsive web applications using React and Node.js
-- Collaborated on 15+ projects with cross-functional teams
-- Reduced bugs by 30% through testing strategies
-
-SKILLS
-Programming Languages: JavaScript, Python, Java
-Frontend: React, Vue.js, HTML5, CSS3
-Backend: Node.js, Express.js, Django
-Databases: PostgreSQL, MongoDB, MySQL
-Cloud: AWS, Google Cloud Platform
-
-EDUCATION
-Bachelor of Science in Computer Science
-State University | 2015 - 2019`;
-
-            showAlert('Sample data loaded successfully!', 'success');
-        }
-
-        // Utility functions
-        function showLoading() {
-            document.getElementById('loadingSection').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingSection').classList.add('hidden');
-        }
-
-        function showResumeForm() {
-            document.getElementById('inputForm').classList.add('hidden');
-            document.getElementById('resumeForm').classList.remove('hidden');
-        }
-
-        function resetForm() {
-            if (confirm('Are you sure you want to reset the form? All changes will be lost.')) {
-                document.getElementById('inputForm').classList.remove('hidden');
-                document.getElementById('resumeForm').classList.add('hidden');
-                document.getElementById('loadingSection').classList.add('hidden');
-                
-                // Clear input form
-                document.getElementById('resumeTitle').value = '';
-                document.getElementById('companyName').value = '';
-                document.getElementById('jobDescription').value = '';
-                document.getElementById('resumeText').value = '';
-                document.getElementById('fullName').value = '';
-                document.getElementById('email').value = '';
-                document.getElementById('phone').value = '';
-                
-                structuredResumeData = null;
-                currentResumeUuid = null;
-            }
-        }
-
-        function showAlert(message, type = 'error') {
-            const existingAlert = document.querySelector('.alert');
-            if (existingAlert) {
-                existingAlert.remove();
-            }
-
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = message;
-            
-            const mainContent = document.querySelector('.main-content');
-            mainContent.insertBefore(alert, mainContent.firstChild);
-            
-            setTimeout(() => alert.remove(), 5000);
         }
     </script>
 </body>
