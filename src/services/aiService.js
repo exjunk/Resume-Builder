@@ -1,14 +1,159 @@
 const config = require('../config/config');
 const { AppError } = require('../middleware/errorHandler');
-const fetch = require('node-fetch');
+const https = require('https');
+const { URL } = require('url');
 
 class AIService {
   constructor() {
     this.apiKey = config.GEMINI_API_KEY;
     this.model = config.GEMINI_MODEL;
     this.baseUrl = config.GEMINI_API_URL;
-    this.timeout = config.AI_RESPONSE_TIMEOUT;
-    this.maxRetries = config.AI_MAX_RETRIES;
+    this.timeout = config.AI_RESPONSE_TIMEOUT || 30000;
+    this.maxRetries = config.AI_MAX_RETRIES || 3;
+  }
+
+  // Direct HTTP request implementation to bypass httpClient issues
+  async makeHTTPRequest(url, options = {}) {
+    return new Promise((resolve, reject) => {
+      try {
+        const parsedUrl = new URL(url);
+        
+        const requestOptions = {
+          hostname: parsedUrl.hostname,
+          port: parsedUrl.port || 443,
+          path: parsedUrl.pathname + parsedUrl.search,
+          method: options.method || 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'ATS-Resume-Optimizer/1.0',
+            ...options.headers
+          },
+          timeout: options.timeout || this.timeout
+        };
+
+        console.log(`🌐 Making ${requestOptions.method} request to: ${parsedUrl.hostname}${requestOptions.path}`);
+
+        const req = https.request(requestOptions, (res) => {
+          let data = '';
+          
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+          
+          res.on('end', () => {
+            console.log(`📡 Response status: ${res.statusCode} ${res.statusMessage}`);
+            
+            const response = {
+              ok: res.statusCode >= 200 && res.statusCode < 300,
+              status: res.statusCode,
+              statusText: res.statusMessage || '',
+              headers: res.headers,
+              url: url,
+              async json() { 
+                try {
+                  return JSON.parse(data);
+                } catch (parseError) {
+                  throw new Error(`Invalid JSON response: ${parseError.message}`);
+                }
+              },
+              async text() { 
+                return data; 
+              }
+            };
+            
+            if (!response.ok) {
+              reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+              return;
+            }
+            
+            resolve(response);
+          });
+        });
+
+        req.on('error', (error) => {
+          console.error('❌ HTTPS request error:', error.message);
+          reject(new Error(`Request failed: ${error.message}`));
+        });
+
+        req.on('timeout', () => {
+          console.error('❌ Request timeout');
+          req.destroy();
+          reject(new Error(`Request timeout after ${options.timeout || this.timeout}ms`));
+        });
+
+        // Set timeout
+        req.setTimeout(options.timeout || this.timeout);
+
+        // Write body if provided
+        if (options.body) {
+          req.write(options.body);
+        }
+
+        req.end();
+      } catch (error) {
+        console.error('❌ Request setup error:', error.message);
+        reject(new Error(`Request setup failed: ${error.message}`));
+      }
+    });
+  }
+
+  // Test HTTP client functionality
+  async testConnection() {
+    if (!this.apiKey) {
+      return { 
+        connected: false, 
+        error: 'API key not configured',
+        model: this.model
+      };
+    }
+
+    try {
+      console.log('🔍 Testing Gemini API connection...');
+      
+      const testPrompt = "Hello, this is a test. Please respond with 'API is working!'";
+      
+      // Direct API call for testing
+      const url = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
+      
+      const payload = {
+        contents: [{
+          parts: [{
+            text: testPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 100
+        }
+      };
+
+      const response = await this.makeHTTPRequest(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        timeout: 10000
+      });
+
+      const data = await response.json();
+      const testResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Test completed';
+      
+      console.log('✅ Gemini API connection test successful');
+      
+      return { 
+        connected: true, 
+        model: this.model,
+        testResponse: testResponse.substring(0, 100) + (testResponse.length > 100 ? '...' : '')
+      };
+    } catch (error) {
+      console.error('❌ AI service test connection error:', error);
+      return { 
+        connected: false, 
+        error: error.message,
+        model: this.model
+      };
+    }
   }
 
   // Main method to call Gemini API
@@ -27,7 +172,7 @@ class AIService {
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        console.log(`AI API attempt ${attempt}/${retries}`);
+        console.log(`🤖 AI API attempt ${attempt}/${retries}`);
         
         const response = await this.makeAPIRequest(prompt, {
           temperature,
@@ -38,13 +183,14 @@ class AIService {
         
       } catch (error) {
         lastError = error;
-        console.error(`AI API attempt ${attempt} failed:`, error.message);
+        console.error(`❌ AI API attempt ${attempt} failed:`, error.message);
         
         if (attempt === retries) {
           break;
         }
         
         // Wait before retry (exponential backoff)
+        console.log(`⏳ Waiting ${Math.pow(2, attempt)} seconds before retry...`);
         await this.delay(Math.pow(2, attempt) * 1000);
       }
     }
@@ -74,91 +220,77 @@ class AIService {
       }
     };
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
     try {
-      const response = await fetch(url, {
+      console.log('📤 Sending request to Gemini API...');
+      
+      const response = await this.makeHTTPRequest(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-        signal: controller.signal
+        timeout: this.timeout
       });
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage;
-        
-        try {
-          const errorJson = JSON.parse(errorText);
-          errorMessage = errorJson.error?.message || 'Gemini API request failed';
-        } catch {
-          errorMessage = `API request failed with status ${response.status}: ${errorText}`;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      return await response.json();
+      const data = await response.json();
+      console.log('📥 Received response from Gemini API');
+      
+      return data;
       
     } catch (error) {
-      clearTimeout(timeoutId);
+      console.error('❌ Gemini API request failed:', error.message);
       
-      if (error.name === 'AbortError') {
-        throw new Error(`Request timeout after ${this.timeout}ms`);
+      // Provide more specific error context
+      if (error.message.includes('403') || error.message.includes('401')) {
+        throw new Error('API key invalid or insufficient permissions');
+      } else if (error.message.includes('429')) {
+        throw new Error('API rate limit exceeded');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('API request timeout - service may be overloaded');
+      } else {
+        throw error;
       }
-      
-      throw error;
     }
   }
 
   // Parse and validate the API response
   parseResponse(data) {
-    if (!data.candidates || !data.candidates[0] || 
-        !data.candidates[0].content || !data.candidates[0].content.parts || 
-        !data.candidates[0].content.parts[0]) {
-      throw new Error('Invalid response format from Gemini API');
+    console.log('🔍 Parsing Gemini API response...');
+    
+    // Check for API errors
+    if (data.error) {
+      throw new Error(`Gemini API error: ${data.error.message || 'Unknown error'}`);
     }
     
-    const content = data.candidates[0].content.parts[0].text;
+    if (!data.candidates || !data.candidates[0]) {
+      console.error('Invalid response structure:', JSON.stringify(data, null, 2));
+      throw new Error('Invalid response format from Gemini API - no candidates');
+    }
+    
+    const candidate = data.candidates[0];
+    
+    // Check for safety issues
+    if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+      console.warn('Response finish reason:', candidate.finishReason);
+      
+      if (candidate.finishReason === 'SAFETY') {
+        throw new Error('Response blocked due to safety concerns');
+      }
+    }
+    
+    if (!candidate.content || !candidate.content.parts || !candidate.content.parts[0]) {
+      console.error('Invalid candidate structure:', JSON.stringify(candidate, null, 2));
+      throw new Error('Invalid response format from Gemini API - no content parts');
+    }
+    
+    const content = candidate.content.parts[0].text;
     
     if (!content || content.trim().length === 0) {
       throw new Error('Empty response from Gemini API');
     }
     
+    console.log('✅ Successfully parsed Gemini API response');
     return content;
-  }
-
-  // Test API connectivity
-  async testConnection() {
-    if (!this.apiKey) {
-      return { 
-        connected: false, 
-        error: 'API key not configured',
-        model: this.model
-      };
-    }
-
-    try {
-      const testPrompt = "Hello, this is a test. Please respond with 'API is working!'";
-      const response = await this.callGeminiAPI(testPrompt, { retries: 1 });
-      
-      return { 
-        connected: true, 
-        model: this.model,
-        testResponse: response.substring(0, 100) + (response.length > 100 ? '...' : '')
-      };
-    } catch (error) {
-      return { 
-        connected: false, 
-        error: error.message,
-        model: this.model
-      };
-    }
   }
 
   // Generate optimized resume using AI
@@ -170,15 +302,19 @@ class AIService {
     );
     
     try {
+      console.log('🎯 Starting resume optimization...');
+      
       const response = await this.callGeminiAPI(prompt, {
         temperature: 0.7,
         maxTokens: 4096
       });
       
+      console.log('✅ Resume optimization completed');
+      
       return this.parseResumeResponse(response, personalInfo);
       
     } catch (error) {
-      console.error('Resume optimization error:', error);
+      console.error('❌ Resume optimization error:', error);
       throw new AppError(
         `Failed to optimize resume: ${error.message}`,
         500,
@@ -259,6 +395,8 @@ Respond with ONLY the JSON object, nothing else.`;
 
   // Parse the resume optimization response
   parseResumeResponse(response, personalInfo) {
+    console.log('📝 Parsing resume optimization response...');
+    
     // Clean the response to ensure it's valid JSON
     let cleanedResponse = response.trim();
     
@@ -276,11 +414,13 @@ Respond with ONLY the JSON object, nothing else.`;
     let optimizedResumeData;
     try {
       optimizedResumeData = JSON.parse(cleanedResponse);
+      console.log('✅ Successfully parsed JSON response');
     } catch (parseError) {
-      console.error('JSON Parse Error:', parseError);
-      console.error('AI Response:', response);
+      console.error('❌ JSON Parse Error:', parseError);
+      console.error('AI Response:', response.substring(0, 500) + '...');
       
       // Fallback: create a structured response from the personal info
+      console.log('🔄 Using fallback response structure');
       optimizedResumeData = this.createFallbackResponse(personalInfo);
     }
 
@@ -327,7 +467,9 @@ Respond with ONLY the JSON object, nothing else.`;
 
   // Validate and fix the AI response structure
   validateAndFixResponse(optimizedResumeData, personalInfo) {
-    return {
+    console.log('🔍 Validating and fixing response structure...');
+    
+    const validatedResponse = {
       name: optimizedResumeData.name || personalInfo.fullName,
       email: optimizedResumeData.email || personalInfo.email,
       mobileNumbers: Array.isArray(optimizedResumeData.mobileNumbers) && optimizedResumeData.mobileNumbers.length > 0 ? 
@@ -363,6 +505,9 @@ Respond with ONLY the JSON object, nothing else.`;
                    }
                  ]
     };
+    
+    console.log('✅ Response structure validated and fixed');
+    return validatedResponse;
   }
 
   // Utility method for delays

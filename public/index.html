@@ -33,12 +33,92 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
         }
 
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
             font-weight: 700;
+        }
+
+        .user-info {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-name {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 40px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .auth-tab.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
         }
 
         .main-content {
@@ -112,7 +192,7 @@
             color: #555;
         }
 
-        input[type="text"], input[type="email"], input[type="url"], textarea, select {
+        input[type="text"], input[type="email"], input[type="password"], input[type="url"], textarea, select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -143,6 +223,7 @@
             transition: all 0.3s ease;
             margin-right: 10px;
             display: inline-block;
+            text-decoration: none;
         }
 
         .btn:hover {
@@ -176,6 +257,11 @@
         .btn-mini {
             padding: 4px 8px;
             font-size: 10px;
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center;
         }
 
         .dropdown-section {
@@ -366,6 +452,21 @@
             width: auto;
         }
 
+        .auth-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .auth-link a {
+            color: #4facfe;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-link a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
             .form-row, .form-row-3, .form-row-4 {
                 grid-template-columns: 1fr;
@@ -380,14 +481,97 @@
                 width: 95%;
                 padding: 20px;
             }
+
+            .auth-container {
+                margin: 20px;
+                padding: 30px 20px;
+            }
+
+            .user-info {
+                position: static;
+                margin-top: 10px;
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Authentication Section -->
+    <div id="authSection" class="hidden">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h2>🎯 ATS Resume Builder</h2>
+                <p>Create professional, ATS-optimized resumes</p>
+            </div>
+
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchAuthTab('login')">Login</div>
+                <div class="auth-tab" onclick="switchAuthTab('register')">Register</div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="auth-form active">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-full">Login</button>
+            </form>
+
+            <!-- Registration Form -->
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="registerName">Full Name</label>
+                    <input type="text" id="registerName" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="registerPhone">Phone (Optional)</label>
+                        <input type="text" id="registerPhone" placeholder="Your phone number">
+                    </div>
+                    <div class="form-group">
+                        <label for="registerLocation">Location (Optional)</label>
+                        <input type="text" id="registerLocation" placeholder="City, State">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerPassword">Password</label>
+                    <input type="password" id="registerPassword" placeholder="Choose a password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-full">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="container hidden">
         <div class="header">
             <h1>🎯 Enhanced Resume Builder</h1>
             <p>Manage profiles, templates, and create ATS-optimized resumes</p>
+            
+            <div class="user-info">
+                <span class="user-name" id="userDisplayName">Welcome!</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
         </div>
 
         <div class="main-content">
@@ -571,7 +755,7 @@
                     </div>
                     
                     <button class="btn btn-success" onclick="saveAsNewTemplate()">💾 Save as Template</button>
-                    <button class="btn" onclick="exportToPDF()">📄 Export to PDF</button>
+                    <button class="btn" onclick="exportToPDFEnhanced()">📄 Export to PDF</button>
                     <button class="btn btn-secondary" onclick="exportToJSON()">📋 Export JSON</button>
                     <button class="btn btn-danger" onclick="resetForm()">🔄 Reset</button>
                 </div>
@@ -678,6 +862,7 @@
         let structuredResumeData = null;
         let currentResumeUuid = null;
         let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
         let userProfiles = [];
         let resumeTemplates = [];
         let currentProfileUuid = null;
@@ -685,21 +870,187 @@
         let editingProfileUuid = null;
         let editingTemplateUuid = null;
 
+        // API Base URL - update this to match your server
+        const API_BASE_URL = window.location.origin;
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            if (!authToken) {
-                showAlert('Please log in first', 'error');
+            checkAuthStatus();
+        });
+
+        // Authentication Functions
+        function checkAuthStatus() {
+            const token = localStorage.getItem('authToken');
+            const userData = localStorage.getItem('userData');
+            
+            if (token && userData) {
+                try {
+                    currentUser = JSON.parse(userData);
+                    authToken = token;
+                    showMainApp();
+                    initializeApp();
+                } catch (error) {
+                    console.error('Error parsing user data:', error);
+                    showAuthSection();
+                }
+            } else {
+                showAuthSection();
+            }
+        }
+
+        function showAuthSection() {
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            if (currentUser) {
+                document.getElementById('userDisplayName').textContent = `Welcome, ${currentUser.fullName}!`;
+            }
+        }
+
+        function switchAuthTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update forms
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.getElementById(tab + 'Form').classList.add('active');
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showAlert('Please fill in all fields', 'error');
                 return;
             }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store auth data
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userData', JSON.stringify(data.user));
+                    
+                    authToken = data.token;
+                    currentUser = data.user;
+                    
+                    showAlert('Login successful!', 'success');
+                    showMainApp();
+                    initializeApp();
+                } else {
+                    showAlert(data.error || 'Login failed', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('Network error. Please try again.', 'error');
+            }
+        });
+
+        // Registration form handler
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
+            const fullName = document.getElementById('registerName').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const phone = document.getElementById('registerPhone').value.trim();
+            const location = document.getElementById('registerLocation').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!fullName || !email || !password || !confirmPassword) {
+                showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('Passwords do not match', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAlert('Password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fullName,
+                        email,
+                        phone: phone || undefined,
+                        location: location || undefined,
+                        password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Store auth data
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userData', JSON.stringify(data.user));
+                    
+                    authToken = data.token;
+                    currentUser = data.user;
+                    
+                    showAlert('Account created successfully!', 'success');
+                    showMainApp();
+                    initializeApp();
+                } else {
+                    showAlert(data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showAlert('Network error. Please try again.', 'error');
+            }
+        });
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userData');
+                authToken = null;
+                currentUser = null;
+                userProfiles = [];
+                resumeTemplates = [];
+                showAuthSection();
+            }
+        }
+
+        // Initialize app after login
+        function initializeApp() {
             loadUserProfiles();
             loadResumeTemplates();
-        });
+        }
 
         // Profile Management Functions
         async function loadUserProfiles() {
             try {
-                const response = await fetch('/api/profiles', {
+                const response = await fetch(`${API_BASE_URL}/api/profiles`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -771,7 +1122,7 @@
         // Template Management Functions
         async function loadResumeTemplates() {
             try {
-                const response = await fetch('/api/templates', {
+                const response = await fetch(`${API_BASE_URL}/api/templates`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -950,7 +1301,8 @@
 
             try {
                 const url = editingProfileUuid ? 
-                    `/api/profiles/${editingProfileUuid}` : '/api/profiles';
+                    `${API_BASE_URL}/api/profiles/${editingProfileUuid}` : 
+                    `${API_BASE_URL}/api/profiles`;
                 const method = editingProfileUuid ? 'PUT' : 'POST';
 
                 const response = await fetch(url, {
@@ -982,7 +1334,7 @@
             if (!confirm('Are you sure you want to delete this profile?')) return;
 
             try {
-                const response = await fetch(`/api/profiles/${editingProfileUuid}`, {
+                const response = await fetch(`${API_BASE_URL}/api/profiles/${editingProfileUuid}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
@@ -1030,7 +1382,7 @@
 
         async function loadTemplateForEditing(templateUuid) {
             try {
-                const response = await fetch(`/api/templates/${templateUuid}`, {
+                const response = await fetch(`${API_BASE_URL}/api/templates/${templateUuid}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -1076,7 +1428,8 @@
 
             try {
                 const url = editingTemplateUuid ? 
-                    `/api/templates/${editingTemplateUuid}` : '/api/templates';
+                    `${API_BASE_URL}/api/templates/${editingTemplateUuid}` : 
+                    `${API_BASE_URL}/api/templates`;
                 const method = editingTemplateUuid ? 'PUT' : 'POST';
 
                 const response = await fetch(url, {
@@ -1108,7 +1461,7 @@
             if (!confirm('Are you sure you want to delete this template?')) return;
 
             try {
-                const response = await fetch(`/api/templates/${editingTemplateUuid}`, {
+                const response = await fetch(`${API_BASE_URL}/api/templates/${editingTemplateUuid}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
@@ -1152,7 +1505,7 @@
 
             try {
                 // Fetch full template content from backend
-                const templateResponse = await fetch(`/api/templates/${currentTemplateUuid}`, {
+                const templateResponse = await fetch(`${API_BASE_URL}/api/templates/${currentTemplateUuid}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -1188,7 +1541,7 @@ Education:
                     templateUuid: currentTemplateUuid
                 });
 
-                const response = await fetch('/api/optimize-resume-json', {
+                const response = await fetch(`${API_BASE_URL}/api/optimize-resume-json`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1238,7 +1591,7 @@ Education:
             };
 
             try {
-                const response = await fetch('/api/templates', {
+                const response = await fetch(`${API_BASE_URL}/api/templates`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1296,74 +1649,6 @@ Education:
             
             return text;
         }
-
-        // Existing functions (populateResumeForm, collectFormData, etc.) remain the same...
-        // [Include all the existing functions from the previous implementation]
-
-        // Load sample data
-        function loadSampleData() {
-            document.getElementById('resumeTitle').value = 'Senior Full Stack Developer at TechCorp';
-            document.getElementById('companyName').value = 'TechCorp Inc.';
-            
-            document.getElementById('jobDescription').value = `We are seeking a Senior Full Stack Developer to join our growing team. 
-
-Required Skills:
-- 5+ years of experience in full-stack development
-- Proficiency in JavaScript, React, Node.js
-- Experience with databases (PostgreSQL, MongoDB)
-- Knowledge of cloud platforms (AWS, Azure)
-- Strong problem-solving skills
-- Experience with Agile methodologies
-
-Responsibilities:
-- Develop and maintain web applications
-- Collaborate with cross-functional teams
-- Mentor junior developers
-- Participate in code reviews
-- Optimize application performance`;
-
-            showAlert('Sample data loaded successfully!', 'success');
-        }
-
-        // Utility functions
-        function showLoading() {
-            document.getElementById('loadingSection').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingSection').classList.add('hidden');
-        }
-
-        function showResumeForm() {
-            document.getElementById('selectionForm').classList.add('hidden');
-            document.getElementById('resumeForm').classList.remove('hidden');
-        }
-
-        function resetForm() {
-            if (confirm('Are you sure you want to reset the form? All changes will be lost.')) {
-                location.reload();
-            }
-        }
-
-        function showAlert(message, type = 'error') {
-            const existingAlert = document.querySelector('.alert');
-            if (existingAlert) {
-                existingAlert.remove();
-            }
-
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = message;
-            
-            const mainContent = document.querySelector('.main-content');
-            mainContent.insertBefore(alert, mainContent.firstChild);
-            
-            setTimeout(() => alert.remove(), 5000);
-        }
-
-        // Add remaining resume form functions here...
-        // (populateResumeForm, mobile number management, experience management, etc.)
-        // [These functions remain the same as in the previous implementation]
 
         // Resume form management functions
         function populateResumeForm(data) {
@@ -1620,6 +1905,31 @@ Responsibilities:
             button.closest('.array-item').remove();
         }
 
+        // Load sample data
+        function loadSampleData() {
+            document.getElementById('resumeTitle').value = 'Senior Full Stack Developer at TechCorp';
+            document.getElementById('companyName').value = 'TechCorp Inc.';
+            
+            document.getElementById('jobDescription').value = `We are seeking a Senior Full Stack Developer to join our growing team. 
+
+Required Skills:
+- 5+ years of experience in full-stack development
+- Proficiency in JavaScript, React, Node.js
+- Experience with databases (PostgreSQL, MongoDB)
+- Knowledge of cloud platforms (AWS, Azure)
+- Strong problem-solving skills
+- Experience with Agile methodologies
+
+Responsibilities:
+- Develop and maintain web applications
+- Collaborate with cross-functional teams
+- Mentor junior developers
+- Participate in code reviews
+- Optimize application performance`;
+
+            showAlert('Sample data loaded successfully!', 'success');
+        }
+
         // Export functions
         function exportToPDF() {
             const formData = collectFormData();
@@ -1770,6 +2080,439 @@ Responsibilities:
             }
         }
 
+        // Enhanced PDF Export Function with Beautiful Formatting
+// Customized Enhanced PDF Export Function
+// Customized Enhanced PDF Export Function
+
+// Customized Enhanced PDF Export Function - Single Page
+function exportToPDFEnhanced() {
+    const formData = collectFormData();
+    
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        // Page dimensions
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 20;
+        const contentWidth = pageWidth - (margin * 2);
+        const availableHeight = pageHeight - (margin * 2) - 15; // Reserve space for footer
+        
+        // Colors - Changed from blue to black
+        const primaryColor = [0, 0, 0]; // Black instead of blue
+        const secondaryColor = [108, 117, 125]; // Gray
+        const accentColor = [40, 167, 69]; // Green
+        const textColor = [33, 37, 41]; // Dark
+        const separatorColor = [0, 0, 0]; // Black separator
+        
+        let yPosition = margin;
+        let scaleFactor = 1; // Will be adjusted based on content
+        
+        // Calculate estimated content height to determine scaling
+        function calculateEstimatedHeight() {
+            let estimatedHeight = 0;
+            
+            // Header (name + contact)
+            estimatedHeight += 25;
+            
+            // Professional Summary
+            if (formData.professionalSummary) {
+                const summaryLines = Math.ceil(formData.professionalSummary.length / 80);
+                estimatedHeight += 20 + (summaryLines * 5);
+            }
+            
+            // Experience
+            if (formData.professionalExperience?.length > 0) {
+                estimatedHeight += 15; // Section header
+                formData.professionalExperience.forEach(exp => {
+                    estimatedHeight += 15; // Job header
+                    estimatedHeight += (exp.jobDetails?.length || 0) * 6; // Achievements
+                    estimatedHeight += 5; // Spacing
+                });
+            }
+            
+            // Skills
+            if (formData.skills?.length > 0) {
+                estimatedHeight += 15; // Section header
+                estimatedHeight += formData.skills.length * 8;
+            }
+            
+            // Education
+            if (formData.education?.length > 0) {
+                estimatedHeight += 15; // Section header
+                estimatedHeight += formData.education.length * 15;
+            }
+            
+            return estimatedHeight;
+        }
+        
+        // Determine scale factor
+        const estimatedHeight = calculateEstimatedHeight();
+        if (estimatedHeight > availableHeight) {
+            scaleFactor = Math.max(0.7, availableHeight / estimatedHeight); // Minimum 70% scaling
+        }
+        
+        // Scaled font sizes and spacing
+        const fonts = {
+            nameSize: Math.max(14, Math.floor(22 * scaleFactor)),
+            sectionHeaderSize: Math.max(10, Math.floor(12 * scaleFactor)),
+            jobTitleSize: Math.max(8, Math.floor(11 * scaleFactor)),
+            bodySize: Math.max(8, Math.floor(10 * scaleFactor)),
+            smallSize: Math.max(8, Math.floor(9 * scaleFactor))
+        };
+        
+        const spacing = {
+            afterHeader: Math.max(8, Math.floor(15 * scaleFactor)),
+            afterSection: Math.max(5, Math.floor(8 * scaleFactor)),
+            betweenItems: Math.max(3, Math.floor(5 * scaleFactor)),
+            lineHeight: Math.max(3, Math.floor(4 * scaleFactor))
+        };
+        
+        // No page breaks - single page only
+        function checkSinglePageLimit() {
+            return yPosition < pageHeight - margin - 15;
+        }
+        
+        // Helper function to add colored rectangle
+        function addColoredRect(x, y, width, height, color) {
+            doc.setFillColor(...color);
+            doc.rect(x, y, width, height, 'F');
+        }
+        
+        // Helper function for section headers - Made smaller and scalable
+        function addSectionHeader(title, color = primaryColor) {
+            if (!checkSinglePageLimit()) return false;
+            
+            // Add thin colored line (1px height)
+            addColoredRect(margin, yPosition, contentWidth, 1, separatorColor);
+            yPosition += Math.max(4, Math.floor(6 * scaleFactor));
+            
+            // Add section title - Scaled size
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(fonts.sectionHeaderSize);
+            doc.setTextColor(...color);
+            doc.text(title.toUpperCase(), margin, yPosition);
+            yPosition += spacing.afterSection;
+            
+            // Reset text color
+            doc.setTextColor(...textColor);
+            return true;
+        }
+        
+        // Helper function for professional text with scaling
+        function addFormattedText(text, fontSize = fonts.bodySize, fontWeight = 'normal', leftMargin = margin, maxWidth = contentWidth) {
+            if (!checkSinglePageLimit()) return false;
+            
+            doc.setFont('helvetica', fontWeight);
+            doc.setFontSize(fontSize);
+            doc.setTextColor(...textColor);
+            
+            const lines = doc.splitTextToSize(text, maxWidth);
+            lines.forEach((line, index) => {
+                if (checkSinglePageLimit()) {
+                    doc.text(line, leftMargin, yPosition);
+                    yPosition += Math.max(3, fontSize * 0.35 + 1.5); // Tighter line spacing
+                }
+            });
+            return true;
+        }
+        
+        // Header Section with Central Alignment - Scaled
+        function createHeader() {
+            // Name - Centrally aligned with scaled font
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(fonts.nameSize);
+            doc.setTextColor(...primaryColor);
+            
+            // Calculate center position for name
+            const nameWidth = doc.getTextWidth(formData.name);
+            const nameX = (pageWidth - nameWidth) / 2;
+            doc.text(formData.name, nameX, yPosition + 5);
+            
+            yPosition += spacing.afterHeader; // Scaled spacing
+            
+            // Contact information in a clean row - Centrally aligned
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(fonts.smallSize);
+            doc.setTextColor(...secondaryColor);
+            
+            // Prepare contact info with clickable LinkedIn
+            const basicContactInfo = [
+                formData.email,
+                ...formData.mobileNumbers
+            ].filter(item => item);
+            
+            let contactText = basicContactInfo.join(' • ');
+            
+            // Add LinkedIn if available
+            if (formData.linkedinUrl) {
+                contactText += ' • LinkedIn';
+            }
+            
+            // Calculate center position for contact info
+            const contactWidth = doc.getTextWidth(contactText);
+            const contactX = (pageWidth - contactWidth) / 2;
+            
+            // Add basic contact info
+            const basicContactText = basicContactInfo.join(' • ');
+            let currentX = contactX;
+            
+            if (basicContactInfo.length > 0) {
+                doc.text(basicContactText, currentX, yPosition);
+                currentX += doc.getTextWidth(basicContactText);
+                
+                if (formData.linkedinUrl) {
+                    doc.text(' • ', currentX, yPosition);
+                    currentX += doc.getTextWidth(' • ');
+                }
+            }
+            
+            // Add clickable LinkedIn
+            if (formData.linkedinUrl) {
+                const linkedinText = 'LinkedIn';
+                doc.setTextColor(0, 0, 255); // Blue color for link
+                doc.text(linkedinText, currentX, yPosition);
+                
+                // Add clickable link
+                const linkedinWidth = doc.getTextWidth(linkedinText);
+                doc.link(currentX, yPosition - 4, linkedinWidth, 6, { url: formData.linkedinUrl });
+                
+                // Reset color
+                doc.setTextColor(...secondaryColor);
+            }
+            
+            yPosition += spacing.afterHeader; // Scaled spacing before professional summary
+        }
+        
+        // Professional Summary with styling - Scaled
+        function createProfessionalSummary() {
+            if (!formData.professionalSummary || !checkSinglePageLimit()) return;
+            
+            if (!addSectionHeader('Professional Summary', primaryColor)) return;
+            
+            // Add summary with scaled styling
+            const summaryHeight = Math.max(15, doc.splitTextToSize(formData.professionalSummary, contentWidth - 10).length * 4 + 6);
+            addColoredRect(margin - 3, yPosition - 2, contentWidth + 6, summaryHeight, [248, 249, 250]);
+            
+            addFormattedText(formData.professionalSummary, fonts.bodySize, 'normal', margin, contentWidth - 6);
+            yPosition += spacing.betweenItems;
+        }
+        
+        // Professional Experience with enhanced formatting - Scaled
+        function createExperience() {
+            if (!formData.professionalExperience?.length || !checkSinglePageLimit()) return;
+            
+            if (!addSectionHeader('Professional Experience', primaryColor)) return;
+            
+            formData.professionalExperience.forEach((exp, index) => {
+                if (!checkSinglePageLimit()) return;
+                
+                // Company and position
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(fonts.jobTitleSize);
+                doc.setTextColor(...textColor);
+                doc.text(exp.jobDesignation, margin, yPosition);
+                
+                // Company name and dates
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(fonts.smallSize);
+                doc.setTextColor(...secondaryColor);
+                const companyLine = `${exp.jobName} | ${exp.term}`;
+                doc.text(companyLine, margin, yPosition + Math.max(4, fonts.jobTitleSize * 0.5));
+                
+                yPosition += Math.max(8, fonts.jobTitleSize + 2);
+                
+                // Achievements with bullet styling
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(fonts.smallSize);
+                doc.setTextColor(...textColor);
+                
+                exp.jobDetails?.forEach(detail => {
+                    if (!checkSinglePageLimit()) return;
+                    
+                    // Custom bullet point
+                    doc.setFillColor(...accentColor);
+                    doc.circle(margin + 1.5, yPosition - 1.5, 0.6, 'F');
+                    
+                    // Achievement text with tighter spacing
+                    const lines = doc.splitTextToSize(detail, contentWidth - 12);
+                    lines.forEach((line, lineIndex) => {
+                        if (checkSinglePageLimit()) {
+                            doc.text(line, margin + 6, yPosition);
+                            if (lineIndex < lines.length - 1) {
+                                yPosition += spacing.lineHeight;
+                            }
+                        }
+                    });
+                    yPosition += spacing.lineHeight;
+                });
+                
+                // Minimal spacing between jobs
+                yPosition += spacing.betweenItems;
+            });
+        }
+        
+        // Skills section with modern layout - Scaled
+        function createSkills() {
+            if (!formData.skills?.length || !checkSinglePageLimit()) return;
+            
+            if (!addSectionHeader('Core Competencies', primaryColor)) return;
+            
+            formData.skills.forEach(skillCategory => {
+                if (!checkSinglePageLimit()) return;
+                
+                // Skill category
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(fonts.bodySize);
+                doc.setTextColor(...primaryColor);
+                doc.text(skillCategory.skillName + ':', margin, yPosition);
+                
+                // Skills with compact styling
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(fonts.smallSize);
+                doc.setTextColor(...textColor);
+                
+                const skillsText = skillCategory.skills.join(' • ');
+                const lines = doc.splitTextToSize(skillsText, contentWidth - 35);
+                
+                lines.forEach(line => {
+                    if (checkSinglePageLimit()) {
+                        yPosition += spacing.lineHeight;
+                        doc.text(line, margin + 35, yPosition);
+                    }
+                });
+                
+                yPosition += spacing.betweenItems;
+            });
+        }
+        
+        // Education section - Scaled
+        function createEducation() {
+            if (!formData.education?.length || !checkSinglePageLimit()) return;
+            
+            if (!addSectionHeader('Education', primaryColor)) return;
+            
+            formData.education.forEach(edu => {
+                if (!checkSinglePageLimit()) return;
+                
+                // Degree
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(fonts.bodySize);
+                doc.setTextColor(...textColor);
+                doc.text(edu.degree, margin, yPosition);
+                
+                // Institution and dates
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(fonts.smallSize);
+                doc.setTextColor(...secondaryColor);
+                const eduLine = `${edu.collegeName} | ${edu.tenure}`;
+                doc.text(eduLine, margin, yPosition + Math.max(4, fonts.bodySize * 0.5));
+                
+                yPosition += Math.max(8, fonts.bodySize + 3);
+            });
+        }
+        
+        // Footer with modern touch - Single page only
+        function createFooter() {
+            const footerY = pageHeight - 10;
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(Math.max(6, fonts.smallSize - 1));
+            doc.setTextColor(...secondaryColor);
+            
+            const footerText = `${formData.name} • Professional Resume • Generated ${new Date().toLocaleDateString()}`;
+            const textWidth = doc.getTextWidth(footerText);
+            doc.text(footerText, (pageWidth - textWidth) / 2, footerY);
+            
+            // Footer line
+            addColoredRect(margin, footerY - 3, contentWidth, 0.5, secondaryColor);
+        }
+        
+        // Build the complete PDF - Single page optimized
+        console.log(`Content scaling factor: ${scaleFactor.toFixed(2)} (${scaleFactor < 1 ? 'compressed' : 'normal'})`);
+        
+        createHeader();
+        createProfessionalSummary();
+        createExperience();
+        createSkills();
+        createEducation();
+        
+        // Not Adding 
+        // Add footer to the single page
+       // createFooter();
+        
+        // Check if content exceeded page and warn user
+        if (yPosition > pageHeight - margin - 15) {
+            console.warn('Content may have exceeded single page limits');
+            // Use existing showAlert function or fallback to console
+            if (typeof showAlert === 'function') {
+                showAlert('⚠️ Content was compressed to fit one page. Consider reducing content for optimal formatting.', 'warning');
+            } else {
+                console.log('⚠️ Content was compressed to fit one page. Consider reducing content for optimal formatting.');
+            }
+        }
+        
+        // Save with formatted filename
+        const fileName = `${formData.name.replace(/[^a-zA-Z0-9]/g, '_')}_Professional_Resume.pdf`;
+        doc.save(fileName);
+        
+        // Use existing showAlert function or fallback to console
+        if (typeof showAlert === 'function') {
+            showAlert('✨ Single-page PDF exported successfully!', 'success');
+        } else {
+            console.log('✨ Single-page PDF exported successfully!');
+        }
+        
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        // Use existing showAlert function or fallback to console
+        if (typeof showAlert === 'function') {
+            showAlert('Error generating PDF: ' + error.message, 'error');
+        } else {
+            console.error('Error generating PDF: ' + error.message);
+        }
+    }
+}
+
+// Alternative: Export with multiple template options
+function exportPDFWithTemplate(templateStyle = 'modern') {
+    const formData = collectFormData();
+    
+    const templates = {
+        modern: {
+            primaryColor: [79, 172, 254],
+            accentColor: [40, 167, 69],
+            backgroundColor: [248, 249, 250],
+            fontFamily: 'helvetica'
+        },
+        professional: {
+            primaryColor: [52, 58, 64],
+            accentColor: [220, 53, 69],
+            backgroundColor: [255, 255, 255],
+            fontFamily: 'helvetica'
+        },
+        creative: {
+            primaryColor: [102, 16, 242],
+            accentColor: [255, 193, 7],
+            backgroundColor: [248, 249, 250],
+            fontFamily: 'helvetica'
+        },
+        executive: {
+            primaryColor: [13, 27, 42],
+            accentColor: [0, 123, 255],
+            backgroundColor: [248, 249, 250],
+            fontFamily: 'helvetica'
+        }
+    };
+    
+    const template = templates[templateStyle] || templates.modern;
+    
+    // Use the enhanced export function with template colors
+    // (You would modify the enhanced function to accept template parameters)
+    exportToPDFEnhanced();
+}
+
         function exportToJSON() {
             const formData = collectFormData();
             
@@ -1782,6 +2525,57 @@ Responsibilities:
             link.click();
             
             showAlert('JSON exported successfully!', 'success');
+        }
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('loadingSection').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingSection').classList.add('hidden');
+        }
+
+        function showResumeForm() {
+            document.getElementById('selectionForm').classList.add('hidden');
+            document.getElementById('resumeForm').classList.remove('hidden');
+        }
+
+        function resetForm() {
+            if (confirm('Are you sure you want to reset the form? All changes will be lost.')) {
+                location.reload();
+            }
+        }
+
+        function showAlert(message, type = 'error') {
+            const existingAlert = document.querySelector('.alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.innerHTML = message;
+            
+            const targetContainer = document.getElementById('authSection').classList.contains('hidden') ? 
+                document.querySelector('.main-content') : document.querySelector('.auth-container');
+            
+            targetContainer.insertBefore(alert, targetContainer.firstChild);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const profileModal = document.getElementById('profileModal');
+            const templateModal = document.getElementById('templateModal');
+            
+            if (event.target === profileModal) {
+                closeProfileModal();
+            }
+            if (event.target === templateModal) {
+                closeTemplateModal();
+            }
         }
     </script>
 </body>
