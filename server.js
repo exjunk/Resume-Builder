@@ -48,21 +48,41 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Initialize database and start server
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+
 async function startServer() {
   try {
     await initDatabase();
     
-    app.listen(PORT, () => {
-      console.log(`🚀 ATS Resume Optimizer Server running on http://localhost:${PORT}`);
-      console.log(`📁 Serving static files from: ${path.join(__dirname, 'public')}`);
-      console.log(`🔑 Gemini API configured: ${!!config.GEMINI_API_KEY}`);
-      console.log(`💾 Database: ${config.DB_PATH}`);
-      
-      if (!config.GEMINI_API_KEY) {
-        console.warn('⚠️  WARNING: GEMINI_API_KEY not found in environment variables');
-        console.log('   Please add your API key to the .env file');
-      }
+    // HTTPS configuration
+    const httpsOptions = {
+      cert: fs.readFileSync('/etc/ssl/cloudflare/cert.pem'),
+      key: fs.readFileSync('/etc/ssl/cloudflare/key.pem')
+    };
+    
+    // Start HTTPS server
+    https.createServer(httpsOptions, app).listen(443, () => {
+      console.log(`🚀 HTTPS Server running on https://localhost:443`);
     });
+    
+    // Start HTTP server (for redirects)
+    http.createServer((req, res) => {
+      res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+      res.end();
+    }).listen(80, () => {
+      console.log(`🔀 HTTP Redirect server running on http://localhost:80`);
+    });
+    
+    console.log(`📁 Serving static files from: ${path.join(__dirname, 'public')}`);
+    console.log(`🔑 Gemini API configured: ${!!config.GEMINI_API_KEY}`);
+    console.log(`💾 Database: ${config.DB_PATH}`);
+    
+    if (!config.GEMINI_API_KEY) {
+      console.warn('⚠️  WARNING: GEMINI_API_KEY not found in environment variables');
+      console.log('   Please add your API key to the .env file');
+    }
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
