@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs-extra');
+const https = require('https');
+const http = require('http');
 require('dotenv').config();
 
 // Import modules
@@ -48,10 +50,6 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Initialize database and start server
-const https = require('https');
-const http = require('http');
-const fs = require('fs');
-
 async function startServer() {
   try {
     await initDatabase();
