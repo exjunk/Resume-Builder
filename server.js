@@ -56,8 +56,8 @@ async function startServer() {
     
     // HTTPS configuration
     const httpsOptions = {
-      cert: fs.readFileSync('/etc/ssl/cloudflare/cert.pem'),
-      key: fs.readFileSync('/etc/ssl/cloudflare/key.pem')
+      cert: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/fullchain.pem'),
+      key: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/privkey.pem')
     };
     
     // Start HTTPS server - EXPLICITLY bind to 0.0.0.0
