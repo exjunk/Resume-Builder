@@ -60,17 +60,17 @@ async function startServer() {
       key: fs.readFileSync('/etc/ssl/cloudflare/key.pem')
     };
     
-    // Start HTTPS server
-    https.createServer(httpsOptions, app).listen(443, () => {
-      console.log(`🚀 HTTPS Server running on https://localhost:443`);
+    // Start HTTPS server - EXPLICITLY bind to 0.0.0.0
+    https.createServer(httpsOptions, app).listen(443, '0.0.0.0', () => {
+      console.log(`🚀 HTTPS Server running on 0.0.0.0:443`);
     });
     
-    // Start HTTP server (for redirects)
+    // Start HTTP server - EXPLICITLY bind to 0.0.0.0
     http.createServer((req, res) => {
       res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
       res.end();
-    }).listen(80, () => {
-      console.log(`🔀 HTTP Redirect server running on http://localhost:80`);
+    }).listen(80, '0.0.0.0', () => {
+      console.log(`🔀 HTTP Redirect server running on 0.0.0.0:80`);
     });
     
     console.log(`📁 Serving static files from: ${path.join(__dirname, 'public')}`);
