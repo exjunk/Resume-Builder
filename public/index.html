@@ -467,6 +467,146 @@
             text-decoration: underline;
         }
 
+        /* AI Provider Tabs */
+        .ai-provider-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .ai-tab {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ai-tab:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+        }
+
+        .ai-tab.active {
+            border-color: #4facfe;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .ai-icon {
+            font-size: 20px;
+        }
+
+        .ai-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .ai-status {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Resume Tabs */
+        .resume-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 20px;
+        }
+
+        .resume-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .resume-tab.active {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .tab-icon {
+            font-size: 16px;
+        }
+
+        .tab-name {
+            font-size: 14px;
+        }
+
+        /* Resume Content */
+        .resume-content {
+            display: none;
+        }
+
+        .resume-content.active {
+            display: block;
+        }
+
+        /* Comparison View */
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .comparison-side {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .comparison-side h3 {
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .comparison-content {
+            min-height: 200px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #ddd;
+        }
+
+        .comparison-placeholder {
+            color: #666;
+            text-align: center;
+            font-style: italic;
+            margin-top: 80px;
+        }
+
+        /* AI Status Indicators */
+        .ai-status.available {
+            color: #28a745;
+        }
+
+        .ai-status.unavailable {
+            color: #dc3545;
+        }
+
+        .ai-status.partial {
+            color: #ffc107;
+        }
+
         @media (max-width: 768px) {
             .form-row, .form-row-3, .form-row-4 {
                 grid-template-columns: 1fr;
@@ -670,81 +810,241 @@
 
             <!-- Structured Resume Form -->
             <div id="resumeForm" class="hidden">
-                <!-- Personal Information -->
+                <!-- AI Provider Selection -->
                 <div class="step">
                     <div class="step-header">
-                        <div class="step-number">👤</div>
-                        <div class="step-title">Personal Information</div>
-                    </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="formName">Full Name</label>
-                            <input type="text" id="formName">
-                        </div>
-                        <div class="form-group">
-                            <label for="formEmail">Email</label>
-                            <input type="email" id="formEmail">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="formLinkedin">LinkedIn URL</label>
-                            <input type="url" id="formLinkedin" placeholder="https://linkedin.com/in/profile">
-                        </div>
-                        <div class="form-group">
-                            <label>Mobile Numbers</label>
-                            <div id="mobileNumbersContainer"></div>
-                            <button type="button" class="btn btn-small" onclick="addMobileNumber()">+ Add Number</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Professional Summary -->
-                <div class="step">
-                    <div class="step-header">
-                        <div class="step-number">📝</div>
-                        <div class="step-title">Professional Summary</div>
+                        <div class="step-number">🤖</div>
+                        <div class="step-title">AI Provider Selection</div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="formSummary">Professional Summary</label>
-                        <textarea id="formSummary" placeholder="Enter your professional summary..."></textarea>
+                        <label>Choose AI Provider:</label>
+                        <div class="ai-provider-tabs">
+                            <button type="button" class="ai-tab active" data-provider="gemini" onclick="switchAIProvider('gemini')">
+                                <span class="ai-icon">🔷</span>
+                                <span class="ai-name">Gemini AI</span>
+                                <span class="ai-status" id="geminiStatus">Checking...</span>
+                            </button>
+                            <button type="button" class="ai-tab" data-provider="openai" onclick="switchAIProvider('openai')">
+                                <span class="ai-icon">🔶</span>
+                                <span class="ai-name">OpenAI GPT</span>
+                                <span class="ai-status" id="openaiStatus">Checking...</span>
+                            </button>
+                            <button type="button" class="ai-tab" data-provider="both" onclick="switchAIProvider('both')">
+                                <span class="ai-icon">🔄</span>
+                                <span class="ai-name">Both APIs</span>
+                                <span class="ai-status" id="bothStatus">Compare</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Professional Experience -->
+                <!-- Resume Content Tabs -->
                 <div class="step">
                     <div class="step-header">
-                        <div class="step-number">💼</div>
-                        <div class="step-title">Professional Experience</div>
+                        <div class="step-number">📄</div>
+                        <div class="step-title">Resume Content</div>
                     </div>
                     
-                    <div id="experienceContainer"></div>
-                    <button type="button" class="btn btn-small" onclick="addExperience()">+ Add Experience</button>
-                </div>
+                    <div class="resume-tabs">
+                        <div class="resume-tab active" data-tab="gemini" onclick="switchResumeTab('gemini')">
+                            <span class="tab-icon">🔷</span>
+                            <span class="tab-name">Gemini Version</span>
+                        </div>
+                        <div class="resume-tab" data-tab="openai" onclick="switchResumeTab('openai')">
+                            <span class="tab-icon">🔶</span>
+                            <span class="tab-name">OpenAI Version</span>
+                        </div>
+                        <div class="resume-tab" data-tab="comparison" onclick="switchResumeTab('comparison')">
+                            <span class="tab-icon">📊</span>
+                            <span class="tab-name">Comparison</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Gemini Resume Content -->
+                    <div id="geminiResumeContent" class="resume-content active">
+                        <!-- Personal Information -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">👤</div>
+                                <div class="step-title">Personal Information</div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="geminiFormName">Full Name</label>
+                                    <input type="text" id="geminiFormName">
+                                </div>
+                                <div class="form-group">
+                                    <label for="geminiFormEmail">Email</label>
+                                    <input type="email" id="geminiFormEmail">
+                                </div>
+                            </div>
 
-                <!-- Skills -->
-                <div class="step">
-                    <div class="step-header">
-                        <div class="step-number">🔧</div>
-                        <div class="step-title">Skills</div>
-                    </div>
-                    
-                    <div id="skillsContainer"></div>
-                    <button type="button" class="btn btn-small" onclick="addSkillCategory()">+ Add Skill Category</button>
-                </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="geminiFormLinkedin">LinkedIn URL</label>
+                                    <input type="url" id="geminiFormLinkedin" placeholder="https://linkedin.com/in/profile">
+                                </div>
+                                <div class="form-group">
+                                    <label>Mobile Numbers</label>
+                                    <div id="geminiMobileNumbersContainer"></div>
+                                    <button type="button" class="btn btn-small" onclick="addGeminiMobileNumber()">+ Add Number</button>
+                                </div>
+                            </div>
+                        </div>
 
-                <!-- Education -->
-                <div class="step">
-                    <div class="step-header">
-                        <div class="step-number">🎓</div>
-                        <div class="step-title">Education</div>
+                        <!-- Professional Summary -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">📝</div>
+                                <div class="step-title">Professional Summary</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="geminiFormSummary">Professional Summary</label>
+                                <textarea id="geminiFormSummary" placeholder="Enter your professional summary..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Professional Experience -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">💼</div>
+                                <div class="step-title">Professional Experience</div>
+                            </div>
+                            
+                            <div id="geminiExperienceContainer"></div>
+                            <button type="button" class="btn btn-small" onclick="addGeminiExperience()">+ Add Experience</button>
+                        </div>
+
+                        <!-- Skills -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">🔧</div>
+                                <div class="step-title">Skills</div>
+                            </div>
+                            
+                            <div id="geminiSkillsContainer"></div>
+                            <button type="button" class="btn btn-small" onclick="addGeminiSkillCategory()">+ Add Skill Category</button>
+                        </div>
+
+                        <!-- Education -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">🎓</div>
+                                <div class="step-title">Education</div>
+                            </div>
+                            
+                            <div id="geminiEducationContainer"></div>
+                            <button type="button" class="btn btn-small" onclick="addGeminiEducation()">+ Add Education</button>
+                        </div>
                     </div>
-                    
-                    <div id="educationContainer"></div>
-                    <button type="button" class="btn btn-small" onclick="addEducation()">+ Add Education</button>
+
+                    <!-- OpenAI Resume Content -->
+                    <div id="openaiResumeContent" class="resume-content">
+                        <!-- Personal Information -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">👤</div>
+                                <div class="step-title">Personal Information</div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="openaiFormName">Full Name</label>
+                                    <input type="text" id="openaiFormName">
+                                </div>
+                                <div class="form-group">
+                                    <label for="openaiFormEmail">Email</label>
+                                    <input type="email" id="openaiFormEmail">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="openaiFormLinkedin">LinkedIn URL</label>
+                                    <input type="url" id="openaiFormLinkedin" placeholder="https://linkedin.com/in/profile">
+                                </div>
+                                <div class="form-group">
+                                    <label>Mobile Numbers</label>
+                                    <div id="openaiMobileNumbersContainer"></div>
+                                    <button type="button" class="btn btn-small" onclick="addOpenAIMobileNumber()">+ Add Number</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Professional Summary -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">📝</div>
+                                <div class="step-title">Professional Summary</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="openaiFormSummary">Professional Summary</label>
+                                <textarea id="openaiFormSummary" placeholder="Enter your professional summary..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Professional Experience -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">💼</div>
+                                <div class="step-title">Professional Experience</div>
+                            </div>
+                            
+                            <div id="openaiExperienceContainer"></div>
+                            <button type="button" class="btn btn-small" onclick="addOpenAIExperience()">+ Add Experience</button>
+                        </div>
+
+                        <!-- Skills -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">🔧</div>
+                                <div class="step-title">Skills</div>
+                            </div>
+                            
+                            <div id="openaiSkillsContainer"></div>
+                            <button type="button" class="btn btn-small" onclick="addOpenAISkillCategory()">+ Add Skill Category</button>
+                        </div>
+
+                        <!-- Education -->
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">🎓</div>
+                                <div class="step-title">Education</div>
+                            </div>
+                            
+                            <div id="openaiEducationContainer"></div>
+                            <button type="button" class="btn btn-small" onclick="addOpenAIEducation()">+ Add Education</button>
+                        </div>
+                    </div>
+
+                    <!-- Comparison View -->
+                    <div id="comparisonResumeContent" class="resume-content">
+                        <div class="step">
+                            <div class="step-header">
+                                <div class="step-number">📊</div>
+                                <div class="step-title">Resume Comparison</div>
+                            </div>
+                            
+                            <div class="comparison-container">
+                                <div class="comparison-side">
+                                    <h3>🔷 Gemini Version</h3>
+                                    <div id="geminiComparisonContent" class="comparison-content">
+                                        <p class="comparison-placeholder">Generate resume to see Gemini version</p>
+                                    </div>
+                                </div>
+                                <div class="comparison-side">
+                                    <h3>🔶 OpenAI Version</h3>
+                                    <div id="openaiComparisonContent" class="comparison-content">
+                                        <p class="comparison-placeholder">Generate resume to see OpenAI version</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Action Buttons -->
@@ -869,6 +1169,8 @@
         let currentTemplateUuid = null;
         let editingProfileUuid = null;
         let editingTemplateUuid = null;
+        let selectedAIProvider = 'gemini';
+        let dualResumeData = null;
 
         // API Base URL - update this to match your server
         const API_BASE_URL = window.location.origin;
@@ -1045,6 +1347,89 @@
         function initializeApp() {
             loadUserProfiles();
             loadResumeTemplates();
+            checkAIStatus();
+        }
+
+        // Check AI API status
+        async function checkAIStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/health/ai`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateAIStatus(data.ai);
+                } else {
+                    console.error('Failed to check AI status:', data.error);
+                }
+            } catch (error) {
+                console.error('Error checking AI status:', error);
+            }
+        }
+
+        // Update AI status indicators
+        function updateAIStatus(aiData) {
+            const geminiStatus = document.getElementById('geminiStatus');
+            const openaiStatus = document.getElementById('openaiStatus');
+            const bothStatus = document.getElementById('bothStatus');
+
+            if (aiData.gemini) {
+                geminiStatus.textContent = aiData.gemini.status === 'Connected' ? '✅ Available' : '❌ Unavailable';
+                geminiStatus.className = 'ai-status ' + (aiData.gemini.status === 'Connected' ? 'available' : 'unavailable');
+            }
+
+            if (aiData.openai) {
+                openaiStatus.textContent = aiData.openai.status === 'Connected' ? '✅ Available' : '❌ Unavailable';
+                openaiStatus.className = 'ai-status ' + (aiData.openai.status === 'Connected' ? 'available' : 'unavailable');
+            }
+
+            // Update both status
+            const geminiAvailable = aiData.gemini && aiData.gemini.status === 'Connected';
+            const openaiAvailable = aiData.openai && aiData.openai.status === 'Connected';
+            
+            if (geminiAvailable && openaiAvailable) {
+                bothStatus.textContent = '✅ Both Available';
+                bothStatus.className = 'ai-status available';
+            } else if (geminiAvailable || openaiAvailable) {
+                bothStatus.textContent = '⚠️ Partial Available';
+                bothStatus.className = 'ai-status partial';
+            } else {
+                bothStatus.textContent = '❌ None Available';
+                bothStatus.className = 'ai-status unavailable';
+            }
+        }
+
+        // Switch AI provider
+        function switchAIProvider(provider) {
+            selectedAIProvider = provider;
+            
+            // Update active tab
+            document.querySelectorAll('.ai-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-provider="${provider}"]`).classList.add('active');
+        }
+
+        // Switch resume tab
+        function switchResumeTab(tab) {
+            // Update active tab
+            document.querySelectorAll('.resume-tab').forEach(t => {
+                t.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            
+            // Update content visibility
+            document.querySelectorAll('.resume-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tab + 'ResumeContent').classList.add('active');
+            
+            // Update comparison view if needed
+            if (tab === 'comparison') {
+                updateComparisonView();
+            }
         }
 
         // Profile Management Functions
@@ -1538,28 +1923,52 @@ Education:
                     jobDescription: jobDescription.substring(0, 100) + '...',
                     resumeContentLength: resumeContent.length,
                     profileUuid: currentProfileUuid,
-                    templateUuid: currentTemplateUuid
+                    templateUuid: currentTemplateUuid,
+                    aiProvider: selectedAIProvider
                 });
 
-                const response = await fetch(`${API_BASE_URL}/api/optimize-resume-json`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({
-                        jobDescription,
-                        resumeText: resumeContent,
-                        profileUuid: currentProfileUuid,
-                        templateUuid: currentTemplateUuid
-                    })
-                });
+                let response;
+                if (selectedAIProvider === 'both') {
+                    response = await fetch(`${API_BASE_URL}/api/resumes/optimize-dual`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            jobDescription,
+                            resumeText: resumeContent,
+                            profileUuid: currentProfileUuid,
+                            templateUuid: currentTemplateUuid
+                        })
+                    });
+                } else {
+                    response = await fetch(`${API_BASE_URL}/api/resumes/optimize`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            jobDescription,
+                            resumeText: resumeContent,
+                            profileUuid: currentProfileUuid,
+                            templateUuid: currentTemplateUuid,
+                            aiProvider: selectedAIProvider
+                        })
+                    });
+                }
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    structuredResumeData = data.optimizedResumeData;
-                    populateResumeForm(structuredResumeData);
+                    if (selectedAIProvider === 'both') {
+                        dualResumeData = data.optimizedResumeData;
+                        populateDualResumeForm(dualResumeData);
+                    } else {
+                        structuredResumeData = data.optimizedResumeData;
+                        populateResumeForm(structuredResumeData, selectedAIProvider);
+                    }
                     hideLoading();
                     showResumeForm();
                     showAlert('Structured resume generated successfully!', 'success');
@@ -1651,38 +2060,134 @@ Education:
         }
 
         // Resume form management functions
-        function populateResumeForm(data) {
-            document.getElementById('formName').value = data.name || '';
-            document.getElementById('formEmail').value = data.email || '';
-            document.getElementById('formLinkedin').value = data.linkedinUrl || '';
-            document.getElementById('formSummary').value = data.professionalSummary || '';
+        function populateResumeForm(data, provider = 'gemini') {
+            const prefix = provider === 'openai' ? 'openai' : 'gemini';
+            
+            document.getElementById(prefix + 'FormName').value = data.name || '';
+            document.getElementById(prefix + 'FormEmail').value = data.email || '';
+            document.getElementById(prefix + 'FormLinkedin').value = data.linkedinUrl || '';
+            document.getElementById(prefix + 'FormSummary').value = data.professionalSummary || '';
 
             // Populate mobile numbers
-            populateMobileNumbers(data.mobileNumbers || []);
+            populateMobileNumbers(data.mobileNumbers || [], prefix);
             
             // Populate experience
-            populateExperience(data.professionalExperience || []);
+            populateExperience(data.professionalExperience || [], prefix);
             
             // Populate skills
-            populateSkills(data.skills || []);
+            populateSkills(data.skills || [], prefix);
             
             // Populate education
-            populateEducation(data.education || []);
+            populateEducation(data.education || [], prefix);
         }
 
-        function collectFormData() {
+        // Populate dual resume forms
+        function populateDualResumeForm(data) {
+            if (data.gemini) {
+                populateResumeForm(data.gemini, 'gemini');
+            }
+            if (data.openai) {
+                populateResumeForm(data.openai, 'openai');
+            }
+            
+            // Update comparison view
+            updateComparisonView();
+        }
+
+        // Update comparison view
+        function updateComparisonView() {
+            if (!dualResumeData) return;
+            
+            const geminiContent = document.getElementById('geminiComparisonContent');
+            const openaiContent = document.getElementById('openaiComparisonContent');
+            
+            if (dualResumeData.gemini) {
+                geminiContent.innerHTML = formatResumeForComparison(dualResumeData.gemini);
+            } else {
+                geminiContent.innerHTML = '<p class="comparison-placeholder">Gemini version not available</p>';
+            }
+            
+            if (dualResumeData.openai) {
+                openaiContent.innerHTML = formatResumeForComparison(dualResumeData.openai);
+            } else {
+                openaiContent.innerHTML = '<p class="comparison-placeholder">OpenAI version not available</p>';
+            }
+        }
+
+        // Format resume for comparison view
+        function formatResumeForComparison(data) {
+            let html = '<div class="comparison-resume">';
+            
+            // Header
+            html += `<h4>${data.name || 'Name'}</h4>`;
+            html += `<p><strong>Email:</strong> ${data.email || 'N/A'}</p>`;
+            if (data.mobileNumbers && data.mobileNumbers.length > 0) {
+                html += `<p><strong>Phone:</strong> ${data.mobileNumbers.join(', ')}</p>`;
+            }
+            if (data.linkedinUrl) {
+                html += `<p><strong>LinkedIn:</strong> ${data.linkedinUrl}</p>`;
+            }
+            
+            // Summary
+            if (data.professionalSummary) {
+                html += '<h5>Professional Summary</h5>';
+                html += `<p>${data.professionalSummary}</p>`;
+            }
+            
+            // Experience
+            if (data.professionalExperience && data.professionalExperience.length > 0) {
+                html += '<h5>Professional Experience</h5>';
+                data.professionalExperience.forEach(exp => {
+                    html += `<div class="exp-item">`;
+                    html += `<strong>${exp.jobDesignation || 'Title'}</strong> - ${exp.jobName || 'Company'}<br>`;
+                    html += `<em>${exp.term || 'Period'}</em><br>`;
+                    if (exp.jobDetails && exp.jobDetails.length > 0) {
+                        html += '<ul>';
+                        exp.jobDetails.forEach(detail => {
+                            html += `<li>${detail}</li>`;
+                        });
+                        html += '</ul>';
+                    }
+                    html += '</div>';
+                });
+            }
+            
+            // Skills
+            if (data.skills && data.skills.length > 0) {
+                html += '<h5>Skills</h5>';
+                data.skills.forEach(skill => {
+                    html += `<p><strong>${skill.skillName}:</strong> ${skill.skills.join(', ')}</p>`;
+                });
+            }
+            
+            // Education
+            if (data.education && data.education.length > 0) {
+                html += '<h5>Education</h5>';
+                data.education.forEach(edu => {
+                    html += `<p><strong>${edu.degree || 'Degree'}</strong><br>`;
+                    html += `${edu.collegeName || 'Institution'} | ${edu.tenure || 'Period'}</p>`;
+                });
+            }
+            
+            html += '</div>';
+            return html;
+        }
+
+        function collectFormData(provider = 'gemini') {
+            const prefix = provider === 'openai' ? 'openai' : 'gemini';
+            
             // Personal info
-            const name = document.getElementById('formName').value;
-            const email = document.getElementById('formEmail').value;
-            const linkedin = document.getElementById('formLinkedin').value;
-            const summary = document.getElementById('formSummary').value;
+            const name = document.getElementById(prefix + 'FormName').value;
+            const email = document.getElementById(prefix + 'FormEmail').value;
+            const linkedin = document.getElementById(prefix + 'FormLinkedin').value;
+            const summary = document.getElementById(prefix + 'FormSummary').value;
 
             // Mobile numbers
-            const mobileInputs = document.querySelectorAll('#mobileNumbersContainer input');
+            const mobileInputs = document.querySelectorAll(`#${prefix}MobileNumbersContainer input`);
             const mobileNumbers = Array.from(mobileInputs).map(input => input.value.trim()).filter(num => num);
 
             // Experience
-            const experienceItems = document.querySelectorAll('#experienceContainer .array-item');
+            const experienceItems = document.querySelectorAll(`#${prefix}ExperienceContainer .array-item`);
             const professionalExperience = Array.from(experienceItems).map(item => ({
                 jobName: item.querySelector('[name="jobName"]').value,
                 jobDesignation: item.querySelector('[name="jobDesignation"]').value,
@@ -1691,14 +2196,14 @@ Education:
             })).filter(exp => exp.jobName || exp.jobDesignation);
 
             // Skills
-            const skillItems = document.querySelectorAll('#skillsContainer .array-item');
+            const skillItems = document.querySelectorAll(`#${prefix}SkillsContainer .array-item`);
             const skills = Array.from(skillItems).map(item => ({
                 skillName: item.querySelector('[name="skillName"]').value,
                 skills: item.querySelector('[name="skills"]').value.split(',').map(s => s.trim()).filter(s => s)
             })).filter(skill => skill.skillName);
 
             // Education
-            const educationItems = document.querySelectorAll('#educationContainer .array-item');
+            const educationItems = document.querySelectorAll(`#${prefix}EducationContainer .array-item`);
             const education = Array.from(educationItems).map(item => ({
                 degree: item.querySelector('[name="degree"]').value,
                 collegeName: item.querySelector('[name="collegeName"]').value,
@@ -1718,27 +2223,39 @@ Education:
         }
 
         // Mobile numbers management
-        function populateMobileNumbers(numbers) {
-            const container = document.getElementById('mobileNumbersContainer');
+        function populateMobileNumbers(numbers, prefix = 'gemini') {
+            const container = document.getElementById(prefix + 'MobileNumbersContainer');
             container.innerHTML = '';
             
             numbers.forEach((number, index) => {
-                addMobileNumberInput(number, index);
+                addMobileNumberInput(number, index, prefix);
             });
             
             if (numbers.length === 0) {
-                addMobileNumberInput('', 0);
+                addMobileNumberInput('', 0, prefix);
             }
         }
 
         function addMobileNumber() {
-            const container = document.getElementById('mobileNumbersContainer');
+            const container = document.getElementById('geminiMobileNumbersContainer');
             const index = container.children.length;
-            addMobileNumberInput('', index);
+            addMobileNumberInput('', index, 'gemini');
         }
 
-        function addMobileNumberInput(value, index) {
-            const container = document.getElementById('mobileNumbersContainer');
+        function addGeminiMobileNumber() {
+            const container = document.getElementById('geminiMobileNumbersContainer');
+            const index = container.children.length;
+            addMobileNumberInput('', index, 'gemini');
+        }
+
+        function addOpenAIMobileNumber() {
+            const container = document.getElementById('openaiMobileNumbersContainer');
+            const index = container.children.length;
+            addMobileNumberInput('', index, 'openai');
+        }
+
+        function addMobileNumberInput(value, index, prefix) {
+            const container = document.getElementById(prefix + 'MobileNumbersContainer');
             const div = document.createElement('div');
             div.className = 'form-group';
             div.innerHTML = `
@@ -1755,27 +2272,39 @@ Education:
         }
 
         // Experience management
-        function populateExperience(experiences) {
-            const container = document.getElementById('experienceContainer');
+        function populateExperience(experiences, prefix = 'gemini') {
+            const container = document.getElementById(prefix + 'ExperienceContainer');
             container.innerHTML = '';
             
             experiences.forEach((exp, index) => {
-                addExperienceItem(exp, index);
+                addExperienceItem(exp, index, prefix);
             });
             
             if (experiences.length === 0) {
-                addExperienceItem({}, 0);
+                addExperienceItem({}, 0, prefix);
             }
         }
 
         function addExperience() {
-            const container = document.getElementById('experienceContainer');
+            const container = document.getElementById('geminiExperienceContainer');
             const index = container.children.length;
-            addExperienceItem({}, index);
+            addExperienceItem({}, index, 'gemini');
         }
 
-        function addExperienceItem(exp, index) {
-            const container = document.getElementById('experienceContainer');
+        function addGeminiExperience() {
+            const container = document.getElementById('geminiExperienceContainer');
+            const index = container.children.length;
+            addExperienceItem({}, index, 'gemini');
+        }
+
+        function addOpenAIExperience() {
+            const container = document.getElementById('openaiExperienceContainer');
+            const index = container.children.length;
+            addExperienceItem({}, index, 'openai');
+        }
+
+        function addExperienceItem(exp, index, prefix) {
+            const container = document.getElementById(prefix + 'ExperienceContainer');
             const div = document.createElement('div');
             div.className = 'array-item';
             div.innerHTML = `
@@ -1810,27 +2339,39 @@ Education:
         }
 
         // Skills management
-        function populateSkills(skills) {
-            const container = document.getElementById('skillsContainer');
+        function populateSkills(skills, prefix = 'gemini') {
+            const container = document.getElementById(prefix + 'SkillsContainer');
             container.innerHTML = '';
             
             skills.forEach((skill, index) => {
-                addSkillCategoryItem(skill, index);
+                addSkillCategoryItem(skill, index, prefix);
             });
             
             if (skills.length === 0) {
-                addSkillCategoryItem({}, 0);
+                addSkillCategoryItem({}, 0, prefix);
             }
         }
 
         function addSkillCategory() {
-            const container = document.getElementById('skillsContainer');
+            const container = document.getElementById('geminiSkillsContainer');
             const index = container.children.length;
-            addSkillCategoryItem({}, index);
+            addSkillCategoryItem({}, index, 'gemini');
         }
 
-        function addSkillCategoryItem(skill, index) {
-            const container = document.getElementById('skillsContainer');
+        function addGeminiSkillCategory() {
+            const container = document.getElementById('geminiSkillsContainer');
+            const index = container.children.length;
+            addSkillCategoryItem({}, index, 'gemini');
+        }
+
+        function addOpenAISkillCategory() {
+            const container = document.getElementById('openaiSkillsContainer');
+            const index = container.children.length;
+            addSkillCategoryItem({}, index, 'openai');
+        }
+
+        function addSkillCategoryItem(skill, index, prefix) {
+            const container = document.getElementById(prefix + 'SkillsContainer');
             const div = document.createElement('div');
             div.className = 'array-item';
             div.innerHTML = `
@@ -1855,27 +2396,39 @@ Education:
         }
 
         // Education management
-        function populateEducation(education) {
-            const container = document.getElementById('educationContainer');
+        function populateEducation(education, prefix = 'gemini') {
+            const container = document.getElementById(prefix + 'EducationContainer');
             container.innerHTML = '';
             
             education.forEach((edu, index) => {
-                addEducationItem(edu, index);
+                addEducationItem(edu, index, prefix);
             });
             
             if (education.length === 0) {
-                addEducationItem({}, 0);
+                addEducationItem({}, 0, prefix);
             }
         }
 
         function addEducation() {
-            const container = document.getElementById('educationContainer');
+            const container = document.getElementById('geminiEducationContainer');
             const index = container.children.length;
-            addEducationItem({}, index);
+            addEducationItem({}, index, 'gemini');
         }
 
-        function addEducationItem(edu, index) {
-            const container = document.getElementById('educationContainer');
+        function addGeminiEducation() {
+            const container = document.getElementById('geminiEducationContainer');
+            const index = container.children.length;
+            addEducationItem({}, index, 'gemini');
+        }
+
+        function addOpenAIEducation() {
+            const container = document.getElementById('openaiEducationContainer');
+            const index = container.children.length;
+            addEducationItem({}, index, 'openai');
+        }
+
+        function addEducationItem(edu, index, prefix) {
+            const container = document.getElementById(prefix + 'EducationContainer');
             const div = document.createElement('div');
             div.className = 'array-item';
             div.innerHTML = `
@@ -1932,7 +2485,7 @@ Responsibilities:
 
         // Export functions
         function exportToPDF() {
-            const formData = collectFormData();
+            const formData = collectFormData(selectedAIProvider);
             
             try {
                 const { jsPDF } = window.jspdf;
@@ -2085,8 +2638,8 @@ Responsibilities:
 // Customized Enhanced PDF Export Function
 
 // Customized Enhanced PDF Export Function - Single Page
-function exportToPDFEnhanced() {
-    const formData = collectFormData();
+        function exportToPDFEnhanced() {
+            const formData = collectFormData(selectedAIProvider);
     
     try {
         const { jsPDF } = window.jspdf;
@@ -2514,7 +3067,7 @@ function exportPDFWithTemplate(templateStyle = 'modern') {
 }
 
         function exportToJSON() {
-            const formData = collectFormData();
+            const formData = collectFormData(selectedAIProvider);
             
             const dataStr = JSON.stringify(formData, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});

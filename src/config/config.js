@@ -17,6 +17,11 @@ const config = {
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
   GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1/models',
   
+  // OpenAI Configuration
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+  OPENAI_API_URL: 'https://api.openai.com/v1/chat/completions',
+  
   // File Upload Configuration
   UPLOAD_DIR: 'uploads',
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
@@ -50,6 +55,10 @@ const config = {
 if (config.NODE_ENV === 'production') {
   if (!config.GEMINI_API_KEY) {
     console.warn('⚠️  GEMINI_API_KEY is not set in production environment');
+  }
+  
+  if (!config.OPENAI_API_KEY) {
+    console.warn('⚠️  OPENAI_API_KEY is not set in production environment');
   }
   
   if (config.JWT_SECRET === 'your-secret-key-change-in-production') {

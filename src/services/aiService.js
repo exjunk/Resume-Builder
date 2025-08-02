@@ -5,9 +5,12 @@ const { URL } = require('url');
 
 class AIService {
   constructor() {
-    this.apiKey = config.GEMINI_API_KEY;
-    this.model = config.GEMINI_MODEL;
-    this.baseUrl = config.GEMINI_API_URL;
+    this.geminiApiKey = config.GEMINI_API_KEY;
+    this.geminiModel = config.GEMINI_MODEL;
+    this.geminiBaseUrl = config.GEMINI_API_URL;
+    this.openaiApiKey = config.OPENAI_API_KEY;
+    this.openaiModel = config.OPENAI_MODEL;
+    this.openaiBaseUrl = config.OPENAI_API_URL;
     this.timeout = config.AI_RESPONSE_TIMEOUT || 30000;
     this.maxRetries = config.AI_MAX_RETRIES || 3;
   }
@@ -97,23 +100,32 @@ class AIService {
     });
   }
 
-  // Test HTTP client functionality
-  async testConnection() {
-    if (!this.apiKey) {
+  // Test API connections
+  async testConnections() {
+    const results = {
+      gemini: await this.testGeminiConnection(),
+      openai: await this.testOpenAIConnection()
+    };
+    
+    return results;
+  }
+
+  // Test Gemini API connection
+  async testGeminiConnection() {
+    if (!this.geminiApiKey) {
       return { 
         connected: false, 
-        error: 'API key not configured',
-        model: this.model
+        error: 'Gemini API key not configured',
+        model: this.geminiModel
       };
     }
 
     try {
       console.log('🔍 Testing Gemini API connection...');
       
-      const testPrompt = "Hello, this is a test. Please respond with 'API is working!'";
+      const testPrompt = "Hello, this is a test. Please respond with 'Gemini API is working!'";
       
-      // Direct API call for testing
-      const url = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
+      const url = `${this.geminiBaseUrl}/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`;
       
       const payload = {
         contents: [{
@@ -143,22 +155,79 @@ class AIService {
       
       return { 
         connected: true, 
-        model: this.model,
+        model: this.geminiModel,
         testResponse: testResponse.substring(0, 100) + (testResponse.length > 100 ? '...' : '')
       };
     } catch (error) {
-      console.error('❌ AI service test connection error:', error);
+      console.error('❌ Gemini API test connection error:', error);
       return { 
         connected: false, 
         error: error.message,
-        model: this.model
+        model: this.geminiModel
+      };
+    }
+  }
+
+  // Test OpenAI API connection
+  async testOpenAIConnection() {
+    if (!this.openaiApiKey) {
+      return { 
+        connected: false, 
+        error: 'OpenAI API key not configured',
+        model: this.openaiModel
+      };
+    }
+
+    try {
+      console.log('🔍 Testing OpenAI API connection...');
+      
+      const testPrompt = "Hello, this is a test. Please respond with 'OpenAI API is working!'";
+      
+      const payload = {
+        model: this.openaiModel,
+        messages: [
+          {
+            role: "user",
+            content: testPrompt
+          }
+        ],
+        max_tokens: 100,
+        temperature: 0.7
+      };
+
+      const response = await this.makeHTTPRequest(this.openaiBaseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.openaiApiKey}`
+        },
+        body: JSON.stringify(payload),
+        timeout: 10000
+      });
+
+      const data = await response.json();
+      const testResponse = data.choices?.[0]?.message?.content || 'Test completed';
+      
+      console.log('✅ OpenAI API connection test successful');
+      
+      return { 
+        connected: true, 
+        model: this.openaiModel,
+        testResponse: testResponse.substring(0, 100) + (testResponse.length > 100 ? '...' : '')
+      };
+    } catch (error) {
+      console.error('❌ OpenAI API test connection error:', error);
+      return { 
+        connected: false, 
+        error: error.message,
+        model: this.openaiModel
       };
     }
   }
 
   // Main method to call Gemini API
   async callGeminiAPI(prompt, options = {}) {
-    if (!this.apiKey) {
+    if (!this.geminiApiKey) {
       throw new AppError('Gemini API key not configured', 500, 'AI_API_KEY_MISSING');
     }
 
@@ -172,18 +241,18 @@ class AIService {
     
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
-        console.log(`🤖 AI API attempt ${attempt}/${retries}`);
+        console.log(`🤖 Gemini API attempt ${attempt}/${retries}`);
         
-        const response = await this.makeAPIRequest(prompt, {
+        const response = await this.makeGeminiAPIRequest(prompt, {
           temperature,
           maxTokens
         });
         
-        return this.parseResponse(response);
+        return this.parseGeminiResponse(response);
         
       } catch (error) {
         lastError = error;
-        console.error(`❌ AI API attempt ${attempt} failed:`, error.message);
+        console.error(`❌ Gemini API attempt ${attempt} failed:`, error.message);
         
         if (attempt === retries) {
           break;
@@ -196,15 +265,61 @@ class AIService {
     }
     
     throw new AppError(
-      `AI service failed after ${retries} attempts: ${lastError.message}`,
+      `Gemini API failed after ${retries} attempts: ${lastError.message}`,
       500,
       'AI_API_FAILED'
     );
   }
 
-  // Make the actual API request
-  async makeAPIRequest(prompt, options) {
-    const url = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
+  // Main method to call OpenAI API
+  async callOpenAIAPI(prompt, options = {}) {
+    if (!this.openaiApiKey) {
+      throw new AppError('OpenAI API key not configured', 500, 'AI_API_KEY_MISSING');
+    }
+
+    const {
+      temperature = 0.7,
+      maxTokens = 4096,
+      retries = this.maxRetries
+    } = options;
+
+    let lastError;
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`🤖 OpenAI API attempt ${attempt}/${retries}`);
+        
+        const response = await this.makeOpenAIAPIRequest(prompt, {
+          temperature,
+          maxTokens
+        });
+        
+        return this.parseOpenAIResponse(response);
+        
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ OpenAI API attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === retries) {
+          break;
+        }
+        
+        // Wait before retry (exponential backoff)
+        console.log(`⏳ Waiting ${Math.pow(2, attempt)} seconds before retry...`);
+        await this.delay(Math.pow(2, attempt) * 1000);
+      }
+    }
+    
+    throw new AppError(
+      `OpenAI API failed after ${retries} attempts: ${lastError.message}`,
+      500,
+      'AI_API_FAILED'
+    );
+  }
+
+  // Make the actual Gemini API request
+  async makeGeminiAPIRequest(prompt, options) {
+    const url = `${this.geminiBaseUrl}/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`;
     
     const payload = {
       contents: [{
@@ -253,8 +368,57 @@ class AIService {
     }
   }
 
-  // Parse and validate the API response
-  parseResponse(data) {
+  // Make the actual OpenAI API request
+  async makeOpenAIAPIRequest(prompt, options) {
+    const payload = {
+      model: this.openaiModel,
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      max_tokens: options.maxTokens,
+      temperature: options.temperature,
+      top_p: 0.8
+    };
+
+    try {
+      console.log('📤 Sending request to OpenAI API...');
+      
+      const response = await this.makeHTTPRequest(this.openaiBaseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.openaiApiKey}`
+        },
+        body: JSON.stringify(payload),
+        timeout: this.timeout
+      });
+
+      const data = await response.json();
+      console.log('📥 Received response from OpenAI API');
+      
+      return data;
+      
+    } catch (error) {
+      console.error('❌ OpenAI API request failed:', error.message);
+      
+      // Provide more specific error context
+      if (error.message.includes('403') || error.message.includes('401')) {
+        throw new Error('API key invalid or insufficient permissions');
+      } else if (error.message.includes('429')) {
+        throw new Error('API rate limit exceeded');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('API request timeout - service may be overloaded');
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  // Parse and validate the Gemini API response
+  parseGeminiResponse(data) {
     console.log('🔍 Parsing Gemini API response...');
     
     // Check for API errors
@@ -293,8 +457,39 @@ class AIService {
     return content;
   }
 
-  // Generate optimized resume using AI
-  async optimizeResume(jobDescription, resumeContent, personalInfo) {
+  // Parse and validate the OpenAI API response
+  parseOpenAIResponse(data) {
+    console.log('🔍 Parsing OpenAI API response...');
+    
+    // Check for API errors
+    if (data.error) {
+      throw new Error(`OpenAI API error: ${data.error.message || 'Unknown error'}`);
+    }
+    
+    if (!data.choices || !data.choices[0]) {
+      console.error('Invalid response structure:', JSON.stringify(data, null, 2));
+      throw new Error('Invalid response format from OpenAI API - no choices');
+    }
+    
+    const choice = data.choices[0];
+    
+    if (!choice.message || !choice.message.content) {
+      console.error('Invalid choice structure:', JSON.stringify(choice, null, 2));
+      throw new Error('Invalid response format from OpenAI API - no message content');
+    }
+    
+    const content = choice.message.content;
+    
+    if (!content || content.trim().length === 0) {
+      throw new Error('Empty response from OpenAI API');
+    }
+    
+    console.log('✅ Successfully parsed OpenAI API response');
+    return content;
+  }
+
+  // Generate optimized resume using Gemini AI
+  async optimizeResumeWithGemini(jobDescription, resumeContent, personalInfo) {
     const prompt = this.buildResumeOptimizationPrompt(
       jobDescription, 
       resumeContent, 
@@ -302,21 +497,82 @@ class AIService {
     );
     
     try {
-      console.log('🎯 Starting resume optimization...');
+      console.log('🎯 Starting resume optimization with Gemini...');
       
       const response = await this.callGeminiAPI(prompt, {
         temperature: 0.7,
         maxTokens: 4096
       });
       
-      console.log('✅ Resume optimization completed');
+      console.log('✅ Resume optimization with Gemini completed');
       
       return this.parseResumeResponse(response, personalInfo);
       
     } catch (error) {
-      console.error('❌ Resume optimization error:', error);
+      console.error('❌ Gemini resume optimization error:', error);
       throw new AppError(
-        `Failed to optimize resume: ${error.message}`,
+        `Failed to optimize resume with Gemini: ${error.message}`,
+        500,
+        'RESUME_OPTIMIZATION_FAILED'
+      );
+    }
+  }
+
+  // Generate optimized resume using OpenAI
+  async optimizeResumeWithOpenAI(jobDescription, resumeContent, personalInfo) {
+    const prompt = this.buildResumeOptimizationPrompt(
+      jobDescription, 
+      resumeContent, 
+      personalInfo
+    );
+    
+    try {
+      console.log('🎯 Starting resume optimization with OpenAI...');
+      
+      const response = await this.callOpenAIAPI(prompt, {
+        temperature: 0.7,
+        maxTokens: 4096
+      });
+      
+      console.log('✅ Resume optimization with OpenAI completed');
+      
+      return this.parseResumeResponse(response, personalInfo);
+      
+    } catch (error) {
+      console.error('❌ OpenAI resume optimization error:', error);
+      throw new AppError(
+        `Failed to optimize resume with OpenAI: ${error.message}`,
+        500,
+        'RESUME_OPTIMIZATION_FAILED'
+      );
+    }
+  }
+
+  // Generate optimized resume using both APIs
+  async optimizeResumeWithBoth(jobDescription, resumeContent, personalInfo) {
+    try {
+      console.log('🎯 Starting resume optimization with both APIs...');
+      
+      const [geminiResult, openaiResult] = await Promise.allSettled([
+        this.optimizeResumeWithGemini(jobDescription, resumeContent, personalInfo),
+        this.optimizeResumeWithOpenAI(jobDescription, resumeContent, personalInfo)
+      ]);
+      
+      const results = {
+        gemini: geminiResult.status === 'fulfilled' ? geminiResult.value : null,
+        openai: openaiResult.status === 'fulfilled' ? openaiResult.value : null,
+        geminiError: geminiResult.status === 'rejected' ? geminiResult.reason.message : null,
+        openaiError: openaiResult.status === 'rejected' ? openaiResult.reason.message : null
+      };
+      
+      console.log('✅ Resume optimization with both APIs completed');
+      
+      return results;
+      
+    } catch (error) {
+      console.error('❌ Dual API resume optimization error:', error);
+      throw new AppError(
+        `Failed to optimize resume with both APIs: ${error.message}`,
         500,
         'RESUME_OPTIMIZATION_FAILED'
       );

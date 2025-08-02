@@ -187,7 +187,8 @@ router.post('/optimize', authenticateToken, asyncHandler(async (req, res) => {
     personalInfo, 
     profileUuid, 
     templateUuid, 
-    saveAsNew 
+    saveAsNew,
+    aiProvider = 'gemini' // Default to Gemini for backward compatibility
   } = req.body;
 
   // Validation
@@ -260,43 +261,217 @@ Education:
     templateUuid,
     personalInfoName: finalPersonalInfo.fullName,
     resumeTextLength: finalResumeText.length,
+    jobDescriptionLength: jobDescription.length,
+    aiProvider
+  });
+
+  // Call AI service for optimization based on provider
+  let structuredResponse;
+  try {
+    if (aiProvider === 'openai') {
+      structuredResponse = await aiService.optimizeResumeWithOpenAI(
+        jobDescription,
+        finalResumeText,
+        finalPersonalInfo
+      );
+    } else if (aiProvider === 'both') {
+      const results = await aiService.optimizeResumeWithBoth(
+        jobDescription,
+        finalResumeText,
+        finalPersonalInfo
+      );
+      
+      // Return both results
+      res.json({
+        success: true,
+        optimizedResumeData: results,
+        aiProvider: 'both',
+        timestamp: new Date().toISOString(),
+        message: 'Resume optimized with both APIs successfully'
+      });
+      return;
+    } else {
+      // Default to Gemini
+      structuredResponse = await aiService.optimizeResumeWithGemini(
+        jobDescription,
+        finalResumeText,
+        finalPersonalInfo
+      );
+    }
+
+    // If resumeUuid is provided, save the structured data
+    if (resumeUuid && !saveAsNew) {
+      const optimizedContent = JSON.stringify(structuredResponse, null, 2);
+      
+      const result = await dbUtils.run(
+        'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
+        [optimizedContent, 'optimized', resumeUuid, req.user.userId]
+      );
+
+      if (result.changes === 0) {
+        throw new AppError('Resume not found', 404, 'RESUME_NOT_FOUND');
+      }
+
+      res.json({
+        success: true,
+        optimizedResumeData: structuredResponse,
+        resumeUuid,
+        aiProvider,
+        timestamp: new Date().toISOString(),
+        message: 'Resume optimized and saved successfully'
+      });
+    } else {
+      // Return optimized content without saving
+      res.json({
+        success: true,
+        optimizedResumeData: structuredResponse,
+        aiProvider,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('AI optimization error:', error);
+    throw new AppError(
+      `Failed to optimize resume with ${aiProvider}: ${error.message}`,
+      500,
+      'RESUME_OPTIMIZATION_FAILED'
+    );
+  }
+}));
+
+// Dual API Resume Optimization Endpoint
+router.post('/optimize-dual', authenticateToken, asyncHandler(async (req, res) => {
+  const { 
+    resumeUuid, 
+    jobDescription, 
+    resumeText, 
+    personalInfo, 
+    profileUuid, 
+    templateUuid, 
+    saveAsNew 
+  } = req.body;
+
+  // Validation
+  if (!jobDescription) {
+    throw new AppError('Job description is required', 400, 'JOB_DESCRIPTION_REQUIRED');
+  }
+
+  let finalPersonalInfo = personalInfo;
+  let finalResumeText = resumeText || '';
+
+  // If profileUuid is provided, fetch profile data
+  if (profileUuid) {
+    const profile = await dbUtils.get(
+      'SELECT * FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+      [profileUuid, req.user.userId]
+    );
+
+    if (profile) {
+      const mobileNumbers = JSON.parse(profile.mobile_numbers || '[]');
+      finalPersonalInfo = {
+        fullName: profile.full_name,
+        email: profile.email,
+        phone: mobileNumbers[0] || '',
+        location: profile.location,
+        linkedinUrl: profile.linkedin_url
+      };
+    }
+  }
+
+  // If templateUuid is provided, fetch template data
+  if (templateUuid && !finalResumeText.trim()) {
+    const template = await dbUtils.get(
+      'SELECT * FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+      [templateUuid, req.user.userId]
+    );
+
+    if (template && template.resume_content) {
+      finalResumeText = template.resume_content;
+    }
+  }
+
+  // If still no resume text, create a basic template
+  if (!finalResumeText.trim()) {
+    finalResumeText = `${finalPersonalInfo?.fullName || 'Professional'}
+
+Professional Summary:
+Experienced professional seeking new opportunities in a challenging role.
+
+Experience:
+[Previous work experience to be enhanced based on job requirements]
+
+Skills:
+[Technical and soft skills relevant to the position]
+
+Education:
+[Educational background and certifications]
+`;
+  }
+
+  if (!finalPersonalInfo || !finalPersonalInfo.fullName || !finalPersonalInfo.email) {
+    throw new AppError(
+      'Personal information with full name and email are required. Please select a profile.',
+      400,
+      'PERSONAL_INFO_REQUIRED'
+    );
+  }
+
+  console.log('Processing dual API resume optimization with:', {
+    profileUuid,
+    templateUuid,
+    personalInfoName: finalPersonalInfo.fullName,
+    resumeTextLength: finalResumeText.length,
     jobDescriptionLength: jobDescription.length
   });
 
-  // Call AI service for optimization
-  const structuredResponse = await aiService.optimizeResume(
-    jobDescription,
-    finalResumeText,
-    finalPersonalInfo
-  );
-
-  // If resumeUuid is provided, save the structured data
-  if (resumeUuid && !saveAsNew) {
-    const optimizedContent = JSON.stringify(structuredResponse, null, 2);
-    
-    const result = await dbUtils.run(
-      'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
-      [optimizedContent, 'optimized', resumeUuid, req.user.userId]
+  try {
+    // Call AI service for dual optimization
+    const results = await aiService.optimizeResumeWithBoth(
+      jobDescription,
+      finalResumeText,
+      finalPersonalInfo
     );
 
-    if (result.changes === 0) {
-      throw new AppError('Resume not found', 404, 'RESUME_NOT_FOUND');
-    }
+    // If resumeUuid is provided, save the structured data (save the first successful result)
+    if (resumeUuid && !saveAsNew) {
+      const optimizedContent = results.gemini || results.openai;
+      if (optimizedContent) {
+        const contentToSave = JSON.stringify(optimizedContent, null, 2);
+        
+        const result = await dbUtils.run(
+          'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
+          [contentToSave, 'optimized', resumeUuid, req.user.userId]
+        );
 
-    res.json({
-      success: true,
-      optimizedResumeData: structuredResponse,
-      resumeUuid,
-      timestamp: new Date().toISOString(),
-      message: 'Resume optimized and saved successfully'
-    });
-  } else {
-    // Return optimized content without saving
-    res.json({
-      success: true,
-      optimizedResumeData: structuredResponse,
-      timestamp: new Date().toISOString()
-    });
+        if (result.changes === 0) {
+          throw new AppError('Resume not found', 404, 'RESUME_NOT_FOUND');
+        }
+      }
+
+      res.json({
+        success: true,
+        optimizedResumeData: results,
+        resumeUuid,
+        aiProvider: 'both',
+        timestamp: new Date().toISOString(),
+        message: 'Resume optimized with both APIs and saved successfully'
+      });
+    } else {
+      // Return optimized content without saving
+      res.json({
+        success: true,
+        optimizedResumeData: results,
+        aiProvider: 'both',
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Dual AI optimization error:', error);
+    throw new AppError(
+      `Failed to optimize resume with both APIs: ${error.message}`,
+      500,
+      'RESUME_OPTIMIZATION_FAILED'
+    );
   }
 }));
 

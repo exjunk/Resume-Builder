@@ -37,25 +37,43 @@ router.get('/', asyncHandler(async (req, res) => {
     healthCheck.status = 'ERROR';
   }
 
-  // Check AI service
+  // Check AI services
   try {
-    const aiStatus = await aiService.testConnection();
-    healthCheck.aiService = {
-      configured: !!config.GEMINI_API_KEY,
-      status: aiStatus.connected ? 'Connected' : 'Error',
-      model: aiStatus.model,
-      ...(aiStatus.error && { error: aiStatus.error }),
-      ...(aiStatus.testResponse && { testResponse: aiStatus.testResponse })
+    const aiStatus = await aiService.testConnections();
+    healthCheck.aiServices = {
+      gemini: {
+        configured: !!config.GEMINI_API_KEY,
+        status: aiStatus.gemini.connected ? 'Connected' : 'Error',
+        model: aiStatus.gemini.model,
+        ...(aiStatus.gemini.error && { error: aiStatus.gemini.error }),
+        ...(aiStatus.gemini.testResponse && { testResponse: aiStatus.gemini.testResponse })
+      },
+      openai: {
+        configured: !!config.OPENAI_API_KEY,
+        status: aiStatus.openai.connected ? 'Connected' : 'Error',
+        model: aiStatus.openai.model,
+        ...(aiStatus.openai.error && { error: aiStatus.openai.error }),
+        ...(aiStatus.openai.testResponse && { testResponse: aiStatus.openai.testResponse })
+      }
     };
     
-    if (!aiStatus.connected) {
+    // Determine overall AI status
+    const geminiConnected = aiStatus.gemini.connected;
+    const openaiConnected = aiStatus.openai.connected;
+    
+    if (!geminiConnected && !openaiConnected) {
       healthCheck.status = 'DEGRADED';
+      healthCheck.aiServices.overall = 'No AI services available';
+    } else if (!geminiConnected || !openaiConnected) {
+      healthCheck.status = 'DEGRADED';
+      healthCheck.aiServices.overall = 'Partial AI services available';
+    } else {
+      healthCheck.aiServices.overall = 'All AI services available';
     }
   } catch (error) {
-    healthCheck.aiService = {
-      configured: !!config.GEMINI_API_KEY,
-      status: 'Error',
-      error: error.message
+    healthCheck.aiServices = {
+      error: error.message,
+      overall: 'Error testing AI services'
     };
     healthCheck.status = 'DEGRADED';
   }
@@ -86,7 +104,9 @@ router.get('/system', asyncHandler(async (req, res) => {
       nodeEnv: config.NODE_ENV,
       port: config.PORT,
       hasGeminiKey: !!config.GEMINI_API_KEY,
-      geminiModel: config.GEMINI_MODEL
+      geminiModel: config.GEMINI_MODEL,
+      hasOpenAIKey: !!config.OPENAI_API_KEY,
+      openaiModel: config.OPENAI_MODEL
     }
   };
 
@@ -163,6 +183,88 @@ router.get('/database', asyncHandler(async (req, res) => {
 // AI service health check
 router.get('/ai', asyncHandler(async (req, res) => {
   const aiHealth = {
+    gemini: {
+      configured: !!config.GEMINI_API_KEY,
+      model: config.GEMINI_MODEL,
+      timeout: config.AI_RESPONSE_TIMEOUT,
+      maxRetries: config.AI_MAX_RETRIES
+    },
+    openai: {
+      configured: !!config.OPENAI_API_KEY,
+      model: config.OPENAI_MODEL,
+      timeout: config.AI_RESPONSE_TIMEOUT,
+      maxRetries: config.AI_MAX_RETRIES
+    }
+  };
+
+  // Check if any AI service is configured
+  const hasAnyAI = aiHealth.gemini.configured || aiHealth.openai.configured;
+
+  if (!hasAnyAI) {
+    return res.status(503).json({
+      success: false,
+      ai: {
+        ...aiHealth,
+        status: 'Not Configured',
+        error: 'No AI API keys found in environment variables'
+      }
+    });
+  }
+
+  try {
+    const connectionTest = await aiService.testConnections();
+    
+    // Update Gemini status
+    aiHealth.gemini.status = connectionTest.gemini.connected ? 'Connected' : 'Error';
+    aiHealth.gemini.testResponse = connectionTest.gemini.testResponse;
+    if (connectionTest.gemini.error) {
+      aiHealth.gemini.error = connectionTest.gemini.error;
+    }
+
+    // Update OpenAI status
+    aiHealth.openai.status = connectionTest.openai.connected ? 'Connected' : 'Error';
+    aiHealth.openai.testResponse = connectionTest.openai.testResponse;
+    if (connectionTest.openai.error) {
+      aiHealth.openai.error = connectionTest.openai.error;
+    }
+
+    // Determine overall status
+    const geminiConnected = connectionTest.gemini.connected;
+    const openaiConnected = connectionTest.openai.connected;
+    
+    if (!geminiConnected && !openaiConnected) {
+      aiHealth.overall = 'No AI services available';
+      aiHealth.status = 'Error';
+    } else if (!geminiConnected || !openaiConnected) {
+      aiHealth.overall = 'Partial AI services available';
+      aiHealth.status = 'Degraded';
+    } else {
+      aiHealth.overall = 'All AI services available';
+      aiHealth.status = 'Connected';
+    }
+
+    const statusCode = (geminiConnected || openaiConnected) ? 200 : 503;
+    
+    res.status(statusCode).json({
+      success: geminiConnected || openaiConnected,
+      ai: aiHealth
+    });
+    
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      ai: {
+        ...aiHealth,
+        status: 'Error',
+        error: error.message
+      }
+    });
+  }
+}));
+
+// Individual AI service health checks
+router.get('/ai/gemini', asyncHandler(async (req, res) => {
+  const aiHealth = {
     configured: !!config.GEMINI_API_KEY,
     model: config.GEMINI_MODEL,
     timeout: config.AI_RESPONSE_TIMEOUT,
@@ -181,7 +283,55 @@ router.get('/ai', asyncHandler(async (req, res) => {
   }
 
   try {
-    const connectionTest = await aiService.testConnection();
+    const connectionTest = await aiService.testGeminiConnection();
+    
+    aiHealth.status = connectionTest.connected ? 'Connected' : 'Error';
+    aiHealth.testResponse = connectionTest.testResponse;
+    
+    if (connectionTest.error) {
+      aiHealth.error = connectionTest.error;
+    }
+
+    const statusCode = connectionTest.connected ? 200 : 503;
+    
+    res.status(statusCode).json({
+      success: connectionTest.connected,
+      ai: aiHealth
+    });
+    
+  } catch (error) {
+    res.status(503).json({
+      success: false,
+      ai: {
+        ...aiHealth,
+        status: 'Error',
+        error: error.message
+      }
+    });
+  }
+}));
+
+router.get('/ai/openai', asyncHandler(async (req, res) => {
+  const aiHealth = {
+    configured: !!config.OPENAI_API_KEY,
+    model: config.OPENAI_MODEL,
+    timeout: config.AI_RESPONSE_TIMEOUT,
+    maxRetries: config.AI_MAX_RETRIES
+  };
+
+  if (!aiHealth.configured) {
+    return res.status(503).json({
+      success: false,
+      ai: {
+        ...aiHealth,
+        status: 'Not Configured',
+        error: 'OPENAI_API_KEY not found in environment variables'
+      }
+    });
+  }
+
+  try {
+    const connectionTest = await aiService.testOpenAIConnection();
     
     aiHealth.status = connectionTest.connected ? 'Connected' : 'Error';
     aiHealth.testResponse = connectionTest.testResponse;
@@ -229,33 +379,62 @@ router.get('/ready', asyncHandler(async (req, res) => {
     allReady = false;
   }
 
-  // AI service check (optional for readiness)
-  if (config.GEMINI_API_KEY) {
+  // AI services check (optional for readiness)
+  const hasAnyAI = config.GEMINI_API_KEY || config.OPENAI_API_KEY;
+  
+  if (hasAnyAI) {
     try {
-      const aiStatus = await aiService.testConnection();
+      const aiStatus = await aiService.testConnections();
+      const geminiConnected = aiStatus.gemini.connected;
+      const openaiConnected = aiStatus.openai.connected;
+      
       checks.push({ 
-        service: 'ai', 
-        status: aiStatus.connected ? 'ready' : 'not_ready',
-        ...(aiStatus.error && { error: aiStatus.error })
+        service: 'ai_gemini', 
+        status: geminiConnected ? 'ready' : 'not_ready',
+        configured: !!config.GEMINI_API_KEY,
+        ...(aiStatus.gemini.error && { error: aiStatus.gemini.error })
+      });
+      
+      checks.push({ 
+        service: 'ai_openai', 
+        status: openaiConnected ? 'ready' : 'not_ready',
+        configured: !!config.OPENAI_API_KEY,
+        ...(aiStatus.openai.error && { error: aiStatus.openai.error })
       });
       
       // AI service failure doesn't make the app not ready, but we note it
-      if (!aiStatus.connected) {
-        checks[checks.length - 1].note = 'AI service unavailable but app can still function';
+      if (!geminiConnected && !openaiConnected) {
+        checks.push({ 
+          service: 'ai_overall', 
+          status: 'not_ready', 
+          note: 'No AI services available but app can still function'
+        });
+      } else if (!geminiConnected || !openaiConnected) {
+        checks.push({ 
+          service: 'ai_overall', 
+          status: 'degraded', 
+          note: 'Partial AI services available'
+        });
+      } else {
+        checks.push({ 
+          service: 'ai_overall', 
+          status: 'ready', 
+          note: 'All AI services available'
+        });
       }
     } catch (error) {
       checks.push({ 
-        service: 'ai', 
+        service: 'ai_overall', 
         status: 'not_ready', 
         error: error.message,
-        note: 'AI service unavailable but app can still function'
+        note: 'AI services unavailable but app can still function'
       });
     }
   } else {
     checks.push({ 
-      service: 'ai', 
+      service: 'ai_overall', 
       status: 'not_configured',
-      note: 'AI service not configured'
+      note: 'No AI services configured'
     });
   }
 
