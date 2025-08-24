@@ -49,18 +49,28 @@ function initDatabase() {
 
 // Create all database tables
 function createTables() {
-  return new Promise((resolve, reject) => {
-    const tables = [
-      createUsersTable(),
-      createUserProfilesTable(),
-      createResumeTemplatesTable(),
-      createResumesTable(),
-      createIndexes()
-    ];
-
-    Promise.all(tables)
-      .then(() => resolve())
-      .catch(reject);
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Create tables sequentially to respect foreign key constraints
+      console.log('📋 Creating users table...');
+      await createUsersTable();
+      
+      console.log('📋 Creating user_profiles table...');
+      await createUserProfilesTable();
+      
+      console.log('📋 Creating resume_templates table...');
+      await createResumeTemplatesTable();
+      
+      console.log('📋 Creating resumes table...');
+      await createResumesTable();
+      
+      console.log('📋 Creating indexes...');
+      await createIndexes();
+      
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 

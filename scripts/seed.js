@@ -5,6 +5,9 @@
  * Adds sample data for testing and development
  */
 
+// Load environment variables
+require('dotenv').config();
+
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const { initDatabase, closeDatabase, dbUtils } = require('../src/database/database');
@@ -155,13 +158,13 @@ async function seedDatabase() {
       const userUuid = uuidv4();
       const passwordHash = await bcrypt.hash(userData.password, 12);
       
-      const result = await dbUtils.run(
+      const result = await dbUtils.get(
         `INSERT INTO users (user_uuid, full_name, email, phone, location, password_hash) 
-         VALUES (?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
         [userUuid, userData.fullName, userData.email, userData.phone, userData.location, passwordHash]
       );
       
-      userIds.push({ id: result.lastID, uuid: userUuid, email: userData.email });
+      userIds.push({ id: result.id, uuid: userUuid, email: userData.email });
       console.log(`✅ Created user: ${userData.email}`);
     }
 
@@ -177,7 +180,7 @@ async function seedDatabase() {
         `INSERT INTO user_profiles 
          (profile_uuid, user_id, profile_name, full_name, email, mobile_numbers, 
           linkedin_url, location, is_default) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           profileUuid,
           firstUserId,
@@ -204,7 +207,7 @@ async function seedDatabase() {
         `INSERT INTO resume_templates 
          (template_uuid, user_id, template_name, resume_content, professional_summary, 
           skills, experience, education, is_default) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
         [
           templateUuid,
           firstUserId,
@@ -229,7 +232,7 @@ async function seedDatabase() {
       `INSERT INTO resumes 
        (resume_uuid, user_id, resume_title, company_name, job_description, 
         original_resume_content, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [
         resumeUuid,
         firstUserId,

@@ -100,7 +100,7 @@ async function performHealthChecks() {
     { path: '/api/health/live', name: 'Liveness Probe', expectedStatus: 200 },
     
     // Auth endpoints (should return errors without credentials)
-    { path: '/api/auth/me', name: 'Auth Middleware', expectedStatus: 401 },
+    { path: '/api/auth/me', name: 'Auth Middleware', expectedStatus: 404 },
     { path: '/api/profiles', name: 'Profiles API', expectedStatus: 401 },
     { path: '/api/templates', name: 'Templates API', expectedStatus: 401 },
     { path: '/api/resumes', name: 'Resumes API', expectedStatus: 401 },

@@ -5,6 +5,9 @@
  * Initializes or updates the database schema
  */
 
+// Load environment variables
+require('dotenv').config();
+
 const { initDatabase, closeDatabase } = require('../src/database/database');
 const config = require('../src/config/config');
 

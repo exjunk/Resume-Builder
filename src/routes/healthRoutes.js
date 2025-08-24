@@ -25,12 +25,7 @@ router.get('/', asyncHandler(async (req, res) => {
   // Check database connection
   try {
     const db = getDatabase();
-    await new Promise((resolve, reject) => {
-      db.get('SELECT 1', (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    await db.query('SELECT 1');
     healthCheck.database = { status: 'Connected', type: 'PostgreSQL (Neon)' };
   } catch (error) {
     healthCheck.database = { status: 'Error', error: error.message };
@@ -208,12 +203,7 @@ router.get('/ready', asyncHandler(async (req, res) => {
   // Database check
   try {
     const db = getDatabase();
-    await new Promise((resolve, reject) => {
-      db.get('SELECT 1', (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    await db.query('SELECT 1');
     checks.push({ service: 'database', status: 'ready' });
   } catch (error) {
     checks.push({ service: 'database', status: 'not_ready', error: error.message });

@@ -54,24 +54,38 @@ async function startServer() {
   try {
     await initDatabase();
     
-    // HTTPS configuration
-    const httpsOptions = {
-      cert: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/fullchain.pem'),
-      key: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/privkey.pem')
-    };
-    
-    // Start HTTPS server - EXPLICITLY bind to 0.0.0.0
-    https.createServer(httpsOptions, app).listen(443, '0.0.0.0', () => {
-      console.log(`🚀 HTTPS Server running on 0.0.0.0:443`);
-    });
-    
-    // Start HTTP server - EXPLICITLY bind to 0.0.0.0
-    http.createServer((req, res) => {
-      res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
-      res.end();
-    }).listen(80, '0.0.0.0', () => {
-      console.log(`🔀 HTTP Redirect server running on 0.0.0.0:80`);
-    });
+    if (config.NODE_ENV === 'production') {
+      // Production: HTTPS configuration
+      try {
+        const httpsOptions = {
+          cert: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/fullchain.pem'),
+          key: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/privkey.pem')
+        };
+        
+        // Start HTTPS server - EXPLICITLY bind to 0.0.0.0
+        https.createServer(httpsOptions, app).listen(443, '0.0.0.0', () => {
+          console.log(`🚀 HTTPS Server running on 0.0.0.0:443`);
+        });
+        
+        // Start HTTP server - EXPLICITLY bind to 0.0.0.0
+        http.createServer((req, res) => {
+          res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` });
+          res.end();
+        }).listen(80, '0.0.0.0', () => {
+          console.log(`🔀 HTTP Redirect server running on 0.0.0.0:80`);
+        });
+      } catch (sslError) {
+        console.warn('⚠️  SSL certificates not found, falling back to HTTP');
+        http.createServer(app).listen(PORT, '0.0.0.0', () => {
+          console.log(`🚀 HTTP Server running on 0.0.0.0:${PORT}`);
+        });
+      }
+    } else {
+      // Development: HTTP server
+      http.createServer(app).listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Development server running on http://localhost:${PORT}`);
+      });
+    }
     
     console.log(`📁 Serving static files from: ${path.join(__dirname, 'public')}`);
     console.log(`🔑 Gemini API configured: ${!!config.GEMINI_API_KEY}`);
