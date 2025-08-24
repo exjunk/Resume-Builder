@@ -16,8 +16,7 @@
     "db:reset": "node scripts/reset.js",
     "cleanup:files": "node scripts/cleanup-files.js",
     "health": "node scripts/health-check.js",
-    "build": "npm run lint && npm test",
-    "postinstall": "npm run db:migrate"
+    "build": "npm run lint && npm test"
   },
   "keywords": [
     "resume",
