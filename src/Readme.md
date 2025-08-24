@@ -1,6 +1,6 @@
 # ATS Resume Optimizer
 
-AI-powered resume optimization system with profile and template management, built with Node.js, Express, SQLite, and Google Gemini AI.
+AI-powered resume optimization system with profile and template management, built with Node.js, Express, PostgreSQL (Neon), and Google Gemini AI.
 
 ## 🚀 Features
 
@@ -48,8 +48,8 @@ ats-resume-optimizer/
 │   ├── js/
 │   └── assets/
 ├── 
-├── database/               # Database files (auto-created)
-│   └── resume_optimizer.db
+├── database/               # Database migration files
+│   └── init.sql
 ├── 
 ├── uploads/               # Uploaded files (auto-created)
 ├── 
@@ -96,6 +96,7 @@ ats-resume-optimizer/
    Edit `.env` file and add your configuration:
    ```bash
    # Required
+   DATABASE_URL=postgresql://username:password@host:port/database_name
    GEMINI_API_KEY=your-gemini-api-key-here
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
    
@@ -128,6 +129,7 @@ ats-resume-optimizer/
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | - | Yes |
 | `PORT` | Server port | `3000` | No |
 | `NODE_ENV` | Environment mode | `development` | No |
 | `JWT_SECRET` | JWT signing secret | - | Yes |

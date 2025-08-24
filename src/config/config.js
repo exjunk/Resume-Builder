@@ -10,7 +10,7 @@ const config = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
   
   // Database Configuration
-  DB_PATH: path.join(__dirname, '../../database', 'resume_optimizer.db'),
+  DATABASE_URL: process.env.DATABASE_URL,
   
   // API Configuration
   GEMINI_API_KEY: process.env.GEMINI_API_KEY,

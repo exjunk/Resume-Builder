@@ -126,7 +126,7 @@ Tech University | 2013 - 2017`,
 
 async function seedDatabase() {
   console.log('🌱 Starting database seeding...');
-  console.log(`📍 Database path: ${config.DB_PATH}`);
+  console.log(`📍 Database URL: ${config.DATABASE_URL ? 'Configured' : 'Not set'}`);
   console.log(`🌍 Environment: ${config.NODE_ENV}`);
 
   try {
@@ -187,7 +187,7 @@ async function seedDatabase() {
           mobileNumbersJson,
           profileData.linkedinUrl,
           profileData.location,
-          profileData.isDefault ? 1 : 0
+          profileData.isDefault
         ]
       );
       
@@ -214,7 +214,7 @@ async function seedDatabase() {
           JSON.stringify([]),
           JSON.stringify([]),
           JSON.stringify([]),
-          templateData.isDefault ? 1 : 0
+          templateData.isDefault
         ]
       );
       

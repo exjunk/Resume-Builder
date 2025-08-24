@@ -31,7 +31,7 @@ router.get('/', asyncHandler(async (req, res) => {
         else resolve();
       });
     });
-    healthCheck.database = { status: 'Connected', type: 'SQLite' };
+    healthCheck.database = { status: 'Connected', type: 'PostgreSQL (Neon)' };
   } catch (error) {
     healthCheck.database = { status: 'Error', error: error.message };
     healthCheck.status = 'ERROR';
@@ -102,28 +102,24 @@ router.get('/database', asyncHandler(async (req, res) => {
   
   const dbHealth = {
     status: 'Unknown',
-    path: config.DB_PATH,
+    type: 'PostgreSQL (Neon)',
+    configured: !!config.DATABASE_URL,
     tables: [],
     stats: {}
   };
 
   try {
     // Test basic connection
-    await new Promise((resolve, reject) => {
-      db.get('SELECT 1 as test', (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+    const testResult = await db.query('SELECT NOW() as test');
+    dbHealth.serverTime = testResult.rows[0].test;
 
     // Get table information
-    const tables = await new Promise((resolve, reject) => {
-      db.all("SELECT name FROM sqlite_master WHERE type='table'", (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows.map(row => row.name));
-      });
-    });
-
+    const tablesResult = await db.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+    `);
+    const tables = tablesResult.rows.map(row => row.table_name);
     dbHealth.tables = tables;
 
     // Get basic statistics for main tables
@@ -132,13 +128,8 @@ router.get('/database', asyncHandler(async (req, res) => {
     for (const table of mainTables) {
       if (tables.includes(table)) {
         try {
-          const count = await new Promise((resolve, reject) => {
-            db.get(`SELECT COUNT(*) as count FROM ${table}`, (err, row) => {
-              if (err) reject(err);
-              else resolve(row.count);
-            });
-          });
-          dbHealth.stats[table] = { count };
+          const countResult = await db.query(`SELECT COUNT(*) as count FROM ${table}`);
+          dbHealth.stats[table] = { count: parseInt(countResult.rows[0].count) };
         } catch (error) {
           dbHealth.stats[table] = { error: error.message };
         }

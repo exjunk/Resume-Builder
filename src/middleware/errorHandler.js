@@ -43,8 +43,8 @@ const errorHandler = (error, req, res, next) => {
   // Handle specific error types
   if (error instanceof multer.MulterError) {
     err = handleMulterError(error);
-  } else if (error.code === 'SQLITE_CONSTRAINT') {
-    err = handleSQLiteError(error);
+  } else if (error.code === '23505' || error.code === '23503') {
+    err = handlePostgreSQLError(error);
   } else if (error.name === 'ValidationError') {
     err = handleValidationError(error);
   } else if (error.name === 'CastError') {
@@ -88,13 +88,13 @@ const handleMulterError = (error) => {
   return new AppError(message, 400, code);
 };
 
-// Handle SQLite database errors
-const handleSQLiteError = (error) => {
+// Handle PostgreSQL database errors
+const handlePostgreSQLError = (error) => {
   let message = 'Database error';
   let code = 'DATABASE_ERROR';
   
-  if (error.message.includes('UNIQUE constraint failed')) {
-    if (error.message.includes('email')) {
+  if (error.code === '23505') { // Unique violation
+    if (error.detail && error.detail.includes('email')) {
       message = 'Email address is already registered';
       code = 'EMAIL_ALREADY_EXISTS';
     } else {
@@ -104,7 +104,7 @@ const handleSQLiteError = (error) => {
     return new AppError(message, 409, code);
   }
   
-  if (error.message.includes('FOREIGN KEY constraint failed')) {
+  if (error.code === '23503') { // Foreign key violation
     message = 'Referenced record not found';
     code = 'FOREIGN_KEY_ERROR';
     return new AppError(message, 400, code);

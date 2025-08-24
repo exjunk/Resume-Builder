@@ -75,7 +75,7 @@ async function startServer() {
     
     console.log(`📁 Serving static files from: ${path.join(__dirname, 'public')}`);
     console.log(`🔑 Gemini API configured: ${!!config.GEMINI_API_KEY}`);
-    console.log(`💾 Database: ${config.DB_PATH}`);
+    console.log(`💾 Database: ${config.DATABASE_URL ? 'Neon PostgreSQL' : 'Not configured'}`);
     
     if (!config.GEMINI_API_KEY) {
       console.warn('⚠️  WARNING: GEMINI_API_KEY not found in environment variables');

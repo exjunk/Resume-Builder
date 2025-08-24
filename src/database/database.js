@@ -1,26 +1,38 @@
-const sqlite3 = require('sqlite3').verbose();
-const fs = require('fs-extra');
-const path = require('path');
+const { Pool } = require('pg');
 const config = require('../config/config');
 
-let db;
+let pool;
 
 // Database initialization
 function initDatabase() {
   return new Promise((resolve, reject) => {
-    // Ensure database directory exists
-    fs.ensureDirSync(path.dirname(config.DB_PATH));
-    
-    db = new sqlite3.Database(config.DB_PATH, (err) => {
-      if (err) {
-        console.error('Error opening database:', err);
-        reject(err);
-        return;
-      }
-      console.log('📁 Connected to SQLite database');
-      
-      // Create tables
-      db.serialize(() => {
+    if (!config.DATABASE_URL) {
+      const error = new Error('DATABASE_URL is not set in environment variables');
+      console.error('❌ Database configuration error:', error.message);
+      reject(error);
+      return;
+    }
+
+    try {
+      pool = new Pool({
+        connectionString: config.DATABASE_URL,
+        ssl: {
+          rejectUnauthorized: false
+        }
+      });
+
+      // Test the connection
+      pool.query('SELECT NOW()', (err, result) => {
+        if (err) {
+          console.error('❌ Error connecting to PostgreSQL database:', err);
+          reject(err);
+          return;
+        }
+        
+        console.log('📁 Connected to PostgreSQL database (Neon)');
+        console.log('🕐 Database time:', result.rows[0].now);
+        
+        // Create tables
         createTables()
           .then(() => {
             console.log('✅ Database tables created/verified');
@@ -28,7 +40,10 @@ function initDatabase() {
           })
           .catch(reject);
       });
-    });
+    } catch (error) {
+      console.error('❌ Error creating database pool:', error);
+      reject(error);
+    }
   });
 }
 
@@ -53,18 +68,18 @@ function createTables() {
 function createUsersTable() {
   return new Promise((resolve, reject) => {
     const sql = `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       user_uuid TEXT UNIQUE NOT NULL,
       full_name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       phone TEXT,
       location TEXT,
       password_hash TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`;
     
-    db.run(sql, (err) => {
+    pool.query(sql, (err) => {
       if (err) {
         console.error('Error creating users table:', err);
         reject(err);
@@ -79,7 +94,7 @@ function createUsersTable() {
 function createUserProfilesTable() {
   return new Promise((resolve, reject) => {
     const sql = `CREATE TABLE IF NOT EXISTS user_profiles (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       profile_uuid TEXT UNIQUE NOT NULL,
       user_id INTEGER NOT NULL,
       profile_name TEXT NOT NULL,
@@ -88,13 +103,13 @@ function createUserProfilesTable() {
       mobile_numbers TEXT, -- JSON array of mobile numbers
       linkedin_url TEXT,
       location TEXT,
-      is_default INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_default BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     )`;
     
-    db.run(sql, (err) => {
+    pool.query(sql, (err) => {
       if (err) {
         console.error('Error creating user_profiles table:', err);
         reject(err);
@@ -109,7 +124,7 @@ function createUserProfilesTable() {
 function createResumeTemplatesTable() {
   return new Promise((resolve, reject) => {
     const sql = `CREATE TABLE IF NOT EXISTS resume_templates (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       template_uuid TEXT UNIQUE NOT NULL,
       user_id INTEGER NOT NULL,
       template_name TEXT NOT NULL,
@@ -118,13 +133,13 @@ function createResumeTemplatesTable() {
       skills TEXT, -- JSON array of skills
       experience TEXT, -- JSON array of experience
       education TEXT, -- JSON array of education
-      is_default INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_default BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     )`;
     
-    db.run(sql, (err) => {
+    pool.query(sql, (err) => {
       if (err) {
         console.error('Error creating resume_templates table:', err);
         reject(err);
@@ -139,7 +154,7 @@ function createResumeTemplatesTable() {
 function createResumesTable() {
   return new Promise((resolve, reject) => {
     const sql = `CREATE TABLE IF NOT EXISTS resumes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       resume_uuid TEXT UNIQUE NOT NULL,
       user_id INTEGER NOT NULL,
       profile_id INTEGER,
@@ -153,14 +168,14 @@ function createResumesTable() {
       original_resume_content TEXT NOT NULL,
       optimized_resume_content TEXT,
       status TEXT DEFAULT 'draft',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
       FOREIGN KEY (profile_id) REFERENCES user_profiles (id) ON DELETE SET NULL,
       FOREIGN KEY (template_id) REFERENCES resume_templates (id) ON DELETE SET NULL
     )`;
     
-    db.run(sql, (err) => {
+    pool.query(sql, (err) => {
       if (err) {
         console.error('Error creating resumes table:', err);
         reject(err);
@@ -189,7 +204,7 @@ function createIndexes() {
     let hasError = false;
 
     indexes.forEach((indexSql) => {
-      db.run(indexSql, (err) => {
+      pool.query(indexSql, (err) => {
         if (err && !hasError) {
           hasError = true;
           console.error('Error creating index:', err);
@@ -206,25 +221,25 @@ function createIndexes() {
   });
 }
 
-// Get database instance
+// Get database pool
 function getDatabase() {
-  if (!db) {
+  if (!pool) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
-  return db;
+  return pool;
 }
 
 // Close database connection
 function closeDatabase() {
   return new Promise((resolve, reject) => {
-    if (db) {
-      db.close((err) => {
+    if (pool) {
+      pool.end((err) => {
         if (err) {
-          console.error('Error closing database:', err);
+          console.error('Error closing database pool:', err);
           reject(err);
         } else {
-          console.log('Database connection closed');
-          db = null;
+          console.log('Database connection pool closed');
+          pool = null;
           resolve();
         }
       });
@@ -240,11 +255,14 @@ const dbUtils = {
   run: (sql, params = []) => {
     return new Promise((resolve, reject) => {
       const database = getDatabase();
-      database.run(sql, params, function(err) {
+      database.query(sql, params, (err, result) => {
         if (err) {
           reject(err);
         } else {
-          resolve({ changes: this.changes, lastID: this.lastID });
+          resolve({ 
+            changes: result.rowCount, 
+            lastID: result.rows[0]?.id || null 
+          });
         }
       });
     });
@@ -254,11 +272,11 @@ const dbUtils = {
   get: (sql, params = []) => {
     return new Promise((resolve, reject) => {
       const database = getDatabase();
-      database.get(sql, params, (err, row) => {
+      database.query(sql, params, (err, result) => {
         if (err) {
           reject(err);
         } else {
-          resolve(row);
+          resolve(result.rows[0] || null);
         }
       });
     });
@@ -268,11 +286,11 @@ const dbUtils = {
   all: (sql, params = []) => {
     return new Promise((resolve, reject) => {
       const database = getDatabase();
-      database.all(sql, params, (err, rows) => {
+      database.query(sql, params, (err, result) => {
         if (err) {
           reject(err);
         } else {
-          resolve(rows);
+          resolve(result.rows);
         }
       });
     });
@@ -280,7 +298,7 @@ const dbUtils = {
 
   // Begin transaction
   beginTransaction: () => {
-    return dbUtils.run('BEGIN TRANSACTION');
+    return dbUtils.run('BEGIN');
   },
 
   // Commit transaction

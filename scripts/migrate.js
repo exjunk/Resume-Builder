@@ -10,7 +10,7 @@ const config = require('../src/config/config');
 
 async function migrate() {
   console.log('🔄 Starting database migration...');
-  console.log(`📍 Database path: ${config.DB_PATH}`);
+  console.log(`📍 Database URL: ${config.DATABASE_URL ? 'Configured' : 'Not set'}`);
   console.log(`🌍 Environment: ${config.NODE_ENV}`);
 
   try {
