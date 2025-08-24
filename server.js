@@ -57,14 +57,41 @@ async function startServer() {
     if (config.NODE_ENV === 'production') {
       // Production: HTTPS configuration
       try {
+        // Try multiple certificate paths for different setups
+        let certPath, keyPath;
+        
+        // Option 1: Subdomain-specific certificates
+        try {
+          certPath = '/etc/letsencrypt/live/resume.androiddevapps.com/fullchain.pem';
+          keyPath = '/etc/letsencrypt/live/resume.androiddevapps.com/privkey.pem';
+          fs.accessSync(certPath);
+          console.log('✅ Using subdomain-specific SSL certificates');
+        } catch (e) {
+          // Option 2: Main domain certificates (if wildcard or main domain cert)
+          try {
+            certPath = '/etc/letsencrypt/live/androiddevapps.com/fullchain.pem';
+            keyPath = '/etc/letsencrypt/live/androiddevapps.com/privkey.pem';
+            fs.accessSync(certPath);
+            console.log('✅ Using main domain SSL certificates');
+          } catch (e2) {
+            // Option 3: Fallback to HTTP
+            console.warn('⚠️  SSL certificates not found, falling back to HTTP');
+            http.createServer(app).listen(PORT, '0.0.0.0', () => {
+              console.log(`🚀 HTTP Server running on 0.0.0.0:${PORT}`);
+            });
+            return;
+          }
+        }
+        
         const httpsOptions = {
-          cert: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/fullchain.pem'),
-          key: fs.readFileSync('/etc/letsencrypt/live/androiddevapps.com/privkey.pem')
+          cert: fs.readFileSync(certPath),
+          key: fs.readFileSync(keyPath)
         };
         
         // Start HTTPS server - EXPLICITLY bind to 0.0.0.0
         https.createServer(httpsOptions, app).listen(443, '0.0.0.0', () => {
           console.log(`🚀 HTTPS Server running on 0.0.0.0:443`);
+          console.log(`🌐 Domain: https://resume.androiddevapps.com`);
         });
         
         // Start HTTP server - EXPLICITLY bind to 0.0.0.0
@@ -74,6 +101,7 @@ async function startServer() {
         }).listen(80, '0.0.0.0', () => {
           console.log(`🔀 HTTP Redirect server running on 0.0.0.0:80`);
         });
+        
       } catch (sslError) {
         console.warn('⚠️  SSL certificates not found, falling back to HTTP');
         http.createServer(app).listen(PORT, '0.0.0.0', () => {
