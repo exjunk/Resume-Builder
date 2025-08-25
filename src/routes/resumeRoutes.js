@@ -12,18 +12,20 @@ const aiService = require('../services/aiService');
 router.get('/', authenticateToken, asyncHandler(async (req, res) => {
   const { status, limit = 50, offset = 0 } = req.query;
   
-  let whereClause = 'WHERE user_id = ?';
+  let whereClause = 'WHERE user_id = $1';
   let queryParams = [req.user.userId];
+  let paramCount = 1;
   
   if (status) {
-    whereClause += ' AND status = ?';
+    paramCount++;
+    whereClause += ` AND status = $${paramCount}`;
     queryParams.push(status);
   }
   
   const resumes = await dbUtils.all(
     `SELECT id, resume_uuid, resume_title, company_name, job_posting_company, 
      status, created_at, updated_at FROM resumes 
-     ${whereClause} ORDER BY updated_at DESC LIMIT ? OFFSET ?`,
+     ${whereClause} ORDER BY updated_at DESC LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`,
     [...queryParams, parseInt(limit), parseInt(offset)]
   );
 
@@ -50,7 +52,7 @@ router.get('/:resumeUuid', authenticateToken, asyncHandler(async (req, res) => {
   const resumeUuid = ValidationService.validateUuid(req.params.resumeUuid, 'Resume UUID');
 
   const resume = await dbUtils.get(
-    'SELECT * FROM resumes WHERE resume_uuid = ? AND user_id = ?',
+    'SELECT * FROM resumes WHERE resume_uuid = $1 AND user_id = $2',
     [resumeUuid, req.user.userId]
   );
 
@@ -73,11 +75,11 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
 
   const resumeUuid = uuidv4();
 
-  const result = await dbUtils.run(
+  const result = await dbUtils.get(
     `INSERT INTO resumes 
      (resume_uuid, user_id, profile_id, template_id, resume_title, company_name, job_id, job_url, 
       job_posting_company, job_description, original_resume_content, status) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'draft') RETURNING id`,
     [
       resumeUuid,
       req.user.userId,
@@ -97,7 +99,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
     success: true,
     message: 'Resume created successfully',
     resumeUuid,
-    resumeId: result.lastID
+    resumeId: result.id
   });
 }));
 
@@ -110,7 +112,7 @@ router.put('/:resumeUuid', authenticateToken, asyncHandler(async (req, res) => {
   // If updating with optimized content
   if (optimizedResumeContent) {
     const result = await dbUtils.run(
-      'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
+      'UPDATE resumes SET optimized_resume_content = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = $3 AND user_id = $4',
       [optimizedResumeContent, status || 'optimized', resumeUuid, req.user.userId]
     );
 
@@ -131,9 +133,9 @@ router.put('/:resumeUuid', authenticateToken, asyncHandler(async (req, res) => {
 
   const result = await dbUtils.run(
     `UPDATE resumes SET 
-     profile_id = ?, template_id = ?, resume_title = ?, company_name = ?, job_id = ?, job_url = ?, 
-     job_posting_company = ?, job_description = ?, original_resume_content = ?, updated_at = CURRENT_TIMESTAMP 
-     WHERE resume_uuid = ? AND user_id = ?`,
+     profile_id = $1, template_id = $2, resume_title = $3, company_name = $4, job_id = $5, job_url = $6, 
+     job_posting_company = $7, job_description = $8, original_resume_content = $9, updated_at = CURRENT_TIMESTAMP 
+     WHERE resume_uuid = $10 AND user_id = $11`,
     [
       profileId || null,
       templateId || null,
@@ -164,7 +166,7 @@ router.delete('/:resumeUuid', authenticateToken, asyncHandler(async (req, res) =
   const resumeUuid = ValidationService.validateUuid(req.params.resumeUuid, 'Resume UUID');
 
   const result = await dbUtils.run(
-    'DELETE FROM resumes WHERE resume_uuid = ? AND user_id = ?',
+    'DELETE FROM resumes WHERE resume_uuid = $1 AND user_id = $2',
     [resumeUuid, req.user.userId]
   );
 

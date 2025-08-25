@@ -12,7 +12,7 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
   const templates = await dbUtils.all(
     `SELECT id, template_uuid, template_name, professional_summary, 
      is_default, created_at, updated_at 
-     FROM resume_templates WHERE user_id = ? ORDER BY is_default DESC, template_name ASC`,
+     FROM resume_templates WHERE user_id = $1 ORDER BY is_default DESC, template_name ASC`,
     [req.user.userId]
   );
 
@@ -27,7 +27,7 @@ router.get('/:templateUuid', authenticateToken, asyncHandler(async (req, res) =>
   const templateUuid = ValidationService.validateUuid(req.params.templateUuid, 'Template UUID');
 
   const template = await dbUtils.get(
-    'SELECT * FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+    'SELECT * FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
     [templateUuid, req.user.userId]
   );
 
@@ -58,11 +58,11 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
 
   // Helper function to insert template
   const insertTemplate = async () => {
-    const result = await dbUtils.run(
+    const result = await dbUtils.get(
       `INSERT INTO resume_templates 
        (template_uuid, user_id, template_name, resume_content, professional_summary, 
         skills, experience, education, is_default) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
       [
         templateUuid,
         req.user.userId,
@@ -72,7 +72,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
         skillsJson,
         experienceJson,
         educationJson,
-        validatedData.isDefault ? 1 : 0
+        validatedData.isDefault
       ]
     );
 
@@ -82,7 +82,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
   // If this is set as default, unset other defaults first
   if (validatedData.isDefault) {
     await dbUtils.run(
-      'UPDATE resume_templates SET is_default = 0 WHERE user_id = ?',
+      'UPDATE resume_templates SET is_default = FALSE WHERE user_id = $1',
       [req.user.userId]
     );
   }
@@ -93,7 +93,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
     success: true,
     message: 'Template created successfully',
     templateUuid,
-    templateId: result.lastID
+    templateId: result.id
   });
 }));
 
@@ -112,10 +112,10 @@ router.put('/:templateUuid', authenticateToken, asyncHandler(async (req, res) =>
   const updateTemplate = async () => {
     const result = await dbUtils.run(
       `UPDATE resume_templates SET 
-       template_name = ?, resume_content = ?, professional_summary = ?, 
-       skills = ?, experience = ?, education = ?, is_default = ?, 
+       template_name = $1, resume_content = $2, professional_summary = $3, 
+       skills = $4, experience = $5, education = $6, is_default = $7, 
        updated_at = CURRENT_TIMESTAMP 
-       WHERE template_uuid = ? AND user_id = ?`,
+       WHERE template_uuid = $8 AND user_id = $9`,
       [
         validatedData.templateName,
         validatedData.resumeContent,
@@ -123,7 +123,7 @@ router.put('/:templateUuid', authenticateToken, asyncHandler(async (req, res) =>
         skillsJson,
         experienceJson,
         educationJson,
-        validatedData.isDefault ? 1 : 0,
+        validatedData.isDefault,
         templateUuid,
         req.user.userId
       ]
@@ -135,7 +135,7 @@ router.put('/:templateUuid', authenticateToken, asyncHandler(async (req, res) =>
   // If this is set as default, unset other defaults first
   if (validatedData.isDefault) {
     await dbUtils.run(
-      'UPDATE resume_templates SET is_default = 0 WHERE user_id = ? AND template_uuid != ?',
+      'UPDATE resume_templates SET is_default = FALSE WHERE user_id = $1 AND template_uuid != $2',
       [req.user.userId, templateUuid]
     );
   }
@@ -158,7 +158,7 @@ router.delete('/:templateUuid', authenticateToken, asyncHandler(async (req, res)
 
   // Check if template exists and get its default status
   const template = await dbUtils.get(
-    'SELECT is_default FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+    'SELECT is_default FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
     [templateUuid, req.user.userId]
   );
 
@@ -169,15 +169,15 @@ router.delete('/:templateUuid', authenticateToken, asyncHandler(async (req, res)
   // Check if there are other templates before deleting the default
   if (template.is_default) {
     const templateCount = await dbUtils.get(
-      'SELECT COUNT(*) as count FROM resume_templates WHERE user_id = ?',
+      'SELECT COUNT(*) as count FROM resume_templates WHERE user_id = $1',
       [req.user.userId]
     );
 
     if (templateCount.count > 1) {
       // Set another template as default before deleting
       await dbUtils.run(
-        `UPDATE resume_templates SET is_default = 1 
-         WHERE user_id = ? AND template_uuid != ? 
+        `UPDATE resume_templates SET is_default = TRUE 
+         WHERE user_id = $1 AND template_uuid != $2 
          ORDER BY created_at ASC LIMIT 1`,
         [req.user.userId, templateUuid]
       );
@@ -186,7 +186,7 @@ router.delete('/:templateUuid', authenticateToken, asyncHandler(async (req, res)
 
   // Delete the template
   const result = await dbUtils.run(
-    'DELETE FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+    'DELETE FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
     [templateUuid, req.user.userId]
   );
 
@@ -206,7 +206,7 @@ router.patch('/:templateUuid/set-default', authenticateToken, asyncHandler(async
 
   // Check if template exists
   const template = await dbUtils.get(
-    'SELECT id FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+    'SELECT id FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
     [templateUuid, req.user.userId]
   );
 
@@ -220,13 +220,13 @@ router.patch('/:templateUuid/set-default', authenticateToken, asyncHandler(async
   try {
     // Unset all defaults for this user
     await dbUtils.run(
-      'UPDATE resume_templates SET is_default = 0 WHERE user_id = ?',
+      'UPDATE resume_templates SET is_default = FALSE WHERE user_id = $1',
       [req.user.userId]
     );
 
     // Set the selected template as default
     await dbUtils.run(
-      'UPDATE resume_templates SET is_default = 1 WHERE template_uuid = ? AND user_id = ?',
+      'UPDATE resume_templates SET is_default = TRUE WHERE template_uuid = $1 AND user_id = $2',
       [templateUuid, req.user.userId]
     );
 
@@ -251,7 +251,7 @@ router.post('/:templateUuid/duplicate', authenticateToken, asyncHandler(async (r
   
   // Get the original template
   const originalTemplate = await dbUtils.get(
-    'SELECT * FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+    'SELECT * FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
     [templateUuid, req.user.userId]
   );
 
@@ -263,11 +263,11 @@ router.post('/:templateUuid/duplicate', authenticateToken, asyncHandler(async (r
   const newTemplateName = `${originalTemplate.template_name} (Copy)`;
 
   // Create duplicate template
-  const result = await dbUtils.run(
+  const result = await dbUtils.get(
     `INSERT INTO resume_templates 
      (template_uuid, user_id, template_name, resume_content, professional_summary, 
       skills, experience, education, is_default) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
     [
       newTemplateUuid,
       req.user.userId,
@@ -277,7 +277,7 @@ router.post('/:templateUuid/duplicate', authenticateToken, asyncHandler(async (r
       originalTemplate.skills,
       originalTemplate.experience,
       originalTemplate.education,
-      0 // New template is not default
+      false // New template is not default
     ]
   );
 
@@ -285,7 +285,7 @@ router.post('/:templateUuid/duplicate', authenticateToken, asyncHandler(async (r
     success: true,
     message: 'Template duplicated successfully',
     templateUuid: newTemplateUuid,
-    templateId: result.lastID
+    templateId: result.id
   });
 }));
 
@@ -294,7 +294,7 @@ router.get('/:templateUuid/preview', authenticateToken, asyncHandler(async (req,
   const templateUuid = ValidationService.validateUuid(req.params.templateUuid, 'Template UUID');
 
   const template = await dbUtils.get(
-    'SELECT template_name, professional_summary, resume_content, created_at FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+    'SELECT template_name, professional_summary, resume_content, created_at FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
     [templateUuid, req.user.userId]
   );
 

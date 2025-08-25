@@ -35,7 +35,7 @@ router.post('/register', async (req, res) => {
 
     // Check if user already exists
     const existingUser = await dbUtils.get(
-      'SELECT id FROM users WHERE email = ?',
+      'SELECT id FROM users WHERE email = $1',
       [email]
     );
 
@@ -48,16 +48,16 @@ router.post('/register', async (req, res) => {
     const userUuid = uuidv4();
 
     // Create user
-    const result = await dbUtils.run(
+    const result = await dbUtils.get(
       `INSERT INTO users (user_uuid, full_name, email, phone, location, password_hash) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [userUuid, fullName, email, phone || null, location || null, passwordHash]
     );
 
     // Generate JWT token
     const token = jwt.sign(
       { 
-        userId: result.lastID, 
+        userId: result.id, 
         userUuid, 
         email, 
         fullName 
@@ -71,7 +71,7 @@ router.post('/register', async (req, res) => {
       message: 'User created successfully',
       token,
       user: {
-        id: result.lastID,
+        id: result.id,
         userUuid,
         fullName,
         email,
@@ -102,7 +102,7 @@ router.post('/login', async (req, res) => {
 
     // Find user
     const user = await dbUtils.get(
-      'SELECT * FROM users WHERE email = ?',
+      'SELECT * FROM users WHERE email = $1',
       [email]
     );
 

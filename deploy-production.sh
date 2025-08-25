@@ -44,7 +44,7 @@ apt update && apt upgrade -y
 
 # Install required packages
 print_status "Installing required packages..."
-apt install -y nginx certbot python3-certbot-nginx nodejs npm
+## apt install -y nginx certbot python3-certbot-nginx nodejs npm
 
 # Check if Node.js is installed
 if ! command -v node &> /dev/null; then

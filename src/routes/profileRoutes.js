@@ -12,7 +12,7 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
   const profiles = await dbUtils.all(
     `SELECT id, profile_uuid, profile_name, full_name, email, mobile_numbers, 
      linkedin_url, location, is_default, created_at, updated_at 
-     FROM user_profiles WHERE user_id = ? ORDER BY is_default DESC, profile_name ASC`,
+     FROM user_profiles WHERE user_id = $1 ORDER BY is_default DESC, profile_name ASC`,
     [req.user.userId]
   );
 
@@ -33,7 +33,7 @@ router.get('/:profileUuid', authenticateToken, asyncHandler(async (req, res) => 
   const profileUuid = ValidationService.validateUuid(req.params.profileUuid, 'Profile UUID');
 
   const profile = await dbUtils.get(
-    'SELECT * FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+    'SELECT * FROM user_profiles WHERE profile_uuid = $1 AND user_id = $2',
     [profileUuid, req.user.userId]
   );
 
@@ -60,11 +60,11 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
 
   // Helper function to insert profile
   const insertProfile = async () => {
-    const result = await dbUtils.run(
+    const result = await dbUtils.get(
       `INSERT INTO user_profiles 
        (profile_uuid, user_id, profile_name, full_name, email, mobile_numbers, 
         linkedin_url, location, is_default) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
       [
         profileUuid,
         req.user.userId,
@@ -74,7 +74,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
         mobileNumbersJson,
         validatedData.linkedinUrl,
         validatedData.location,
-        validatedData.isDefault ? 1 : 0
+        validatedData.isDefault
       ]
     );
 
@@ -84,7 +84,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
   // If this is set as default, unset other defaults first
   if (validatedData.isDefault) {
     await dbUtils.run(
-      'UPDATE user_profiles SET is_default = 0 WHERE user_id = ?',
+      'UPDATE user_profiles SET is_default = FALSE WHERE user_id = $1',
       [req.user.userId]
     );
   }
@@ -95,7 +95,7 @@ router.post('/', authenticateToken, asyncHandler(async (req, res) => {
     success: true,
     message: 'Profile created successfully',
     profileUuid,
-    profileId: result.lastID
+    profileId: result.id
   });
 }));
 
