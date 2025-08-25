@@ -58,35 +58,6 @@ APP_DIR="/var/www/resume.androiddevapps.com"
 print_status "Creating application directory: $APP_DIR"
 mkdir -p $APP_DIR
 
-# Set up environment variables
-print_status "Setting up environment variables..."
-cat > $APP_DIR/.env << 'EOF'
-# Database Configuration
-DATABASE_URL='postgresql://neondb_owner:npg_b8xXGDePr0Bp@ep-plain-tree-a1jtk20c-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
-
-# Server Configuration
-PORT=3000
-NODE_ENV=production
-
-# Security
-JWT_SECRET=secret_key_exjunk_resume_builder
-JWT_EXPIRES_IN=7d
-
-# AI Configuration
-GEMINI_API_KEY=AIzaSyA7Nrx3Xrz9lEoVCxdFtzJqxfsfWGYOGXg
-GEMINI_MODEL=gemini-1.5-flash
-
-# File Upload Configuration
-MAX_FILE_SIZE=5242880
-UPLOAD_DIR=uploads
-
-# Production Settings
-ENABLE_REQUEST_LOGGING=false
-ENABLE_DETAILED_ERRORS=false
-EOF
-
-chmod 600 $APP_DIR/.env
-print_success "Environment variables configured"
 
 # Set up Nginx configuration
 print_status "Setting up Nginx configuration..."
