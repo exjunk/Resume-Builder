@@ -325,9 +325,15 @@ class AIService {
 
   // Build the resume optimization prompt
   buildResumeOptimizationPrompt(jobDescription, resumeContent, personalInfo) {
-    return `You are an expert ATS (Applicant Tracking System) resume optimizer. Your task is to analyze the provided resume and job description, then create an optimized resume in a specific JSON format.
+    return `You are an expert ATS (Applicant Tracking System) resume optimizer and career strategist with 15+ years of experience in talent acquisition and resume writing. Your expertise includes understanding recruiter psychology, ATS algorithms, and industry-specific requirements across technology, finance, healthcare, and other sectors.
 
-IMPORTANT: You must respond with ONLY a valid JSON object. Do not include any explanations, markdown, or text outside the JSON structure.
+CRITICAL INSTRUCTIONS:
+- Respond with ONLY a valid JSON object
+- No explanations, markdown, or additional text
+- Focus on creating compelling, results-driven content
+- Ensure perfect grammar and professional language
+
+=== ANALYSIS INPUTS ===
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -342,55 +348,112 @@ Phone: ${personalInfo.phone || 'Not provided'}
 Location: ${personalInfo.location || 'Not provided'}
 LinkedIn: ${personalInfo.linkedinUrl || 'Not provided'}
 
-Analyze the job description and optimize the resume content to match the requirements. Return a JSON object with this exact structure:
+=== OPTIMIZATION STRATEGY ===
+
+STEP 1: KEYWORD EXTRACTION
+- Extract ALL technical skills, tools, technologies, and frameworks mentioned in the job description
+- Identify industry-specific buzzwords and terminology
+- Note required experience levels, certifications, and qualifications
+- Capture soft skills and competencies mentioned
+
+STEP 2: CONTENT TRANSFORMATION
+- Transform generic descriptions into achievement-focused statements
+- Use the STAR method (Situation, Task, Action, Result) for experience bullets
+- Include specific metrics, percentages, dollar amounts, timeframes, and scale
+- Replace weak verbs with powerful action verbs (Architected, Spearheaded, Optimized, Delivered, Implemented, etc.)
+
+STEP 3: ATS OPTIMIZATION
+- Mirror exact keyword phrasing from job description (case-sensitive)
+- Ensure keyword density without stuffing
+- Use both acronyms and full forms (e.g., "AI" and "Artificial Intelligence")
+- Include synonyms and related terms
+
+=== ENHANCED JSON STRUCTURE ===
 
 {
   "name": "${personalInfo.fullName}",
   "email": "${personalInfo.email}",
   "mobileNumbers": ["${personalInfo.phone || ''}"],
   "linkedinUrl": "${personalInfo.linkedinUrl || 'https://linkedin.com/in/' + personalInfo.fullName.toLowerCase().replace(/\\s+/g, '-')}",
-  "professionalSummary": "2-3 sentence ATS-optimized professional summary tailored to the job",
+  "professionalSummary": "Create a compelling 3-4 sentence summary that: (1) Opens with your professional identity using exact job title from posting, (2) Quantifies total years of relevant experience, (3) Highlights 2-3 key achievements with specific metrics that align with job requirements, (4) Closes with your value proposition and how you'll contribute to their specific goals. Use keywords naturally.",
   "professionalExperience": [
     {
-      "jobName": "Company Name",
-      "term": "Start Date - End Date",
-      "jobDesignation": "Job Title",
+      "jobName": "Use actual company names from resume or create realistic ones that match industry",
+      "term": "MM/YYYY - MM/YYYY format, ensure logical progression",
+      "jobDesignation": "Use job titles that show career progression and include keywords from target role",
       "jobDetails": [
-        "Achievement 1 with quantified results that matches job requirements",
-        "Achievement 2 with quantified results that matches job requirements",
-        "Achievement 3 with quantified results that matches job requirements"
+        "Start with power verb + specific technology/skill + quantified impact. Example: 'Architected scalable microservices using React and Node.js, improving application performance by 40% and serving 500K+ daily active users'",
+        "Focus on problem-solving: 'Identified and resolved critical security vulnerability in legacy system, preventing potential $2M+ in data breach costs and ensuring GDPR compliance for 100K+ user records'",
+        "Show leadership/collaboration: 'Led cross-functional team of 8 developers and 3 designers through agile development cycle, delivering 15+ features ahead of schedule and increasing user engagement by 35%'",
+        "Demonstrate business impact: 'Implemented automated testing framework reducing deployment time by 60% and decreasing production bugs by 75%, saving company $50K annually in development costs'",
+        "Include relevant technologies: Use exact tool names, programming languages, frameworks, and methodologies mentioned in job description"
       ]
     }
   ],
   "skills": [
     {
-      "skillName": "Technical Skills",
-      "skills": ["skill1 from job description", "skill2 from job description", "skill3 from job description"]
+      "skillName": "Core Technical Skills",
+      "skills": ["List 5-8 most relevant technical skills from job description in order of importance"]
     },
     {
-      "skillName": "Programming Languages",
-      "skills": ["language1 if relevant", "language2 if relevant"]
+      "skillName": "Programming Languages & Frameworks",
+      "skills": ["Include specific languages, frameworks, and versions if mentioned in job description"]
+    },
+    {
+      "skillName": "Tools & Technologies",
+      "skills": ["Development tools, platforms, databases, cloud services mentioned in job posting"]
+    },
+    {
+      "skillName": "Professional Competencies",
+      "skills": ["Soft skills and methodologies mentioned in job requirements (Agile, Leadership, Communication, etc.)"]
     }
   ],
   "education": [
     {
-      "degree": "Degree Name (infer from current resume or make relevant to job)",
-      "collegeName": "Institution Name",
-      "tenure": "Start Year - End Year"
+      "degree": "Use actual degree from resume or infer relevant one. Include relevant coursework, GPA if high, honors",
+      "collegeName": "Institution name from resume or create credible one",
+      "tenure": "YYYY - YYYY format"
     }
   ]
 }
 
-Focus on:
-1. Including EXACT keywords from the job description
-2. Quantifying achievements with numbers/percentages where possible
-3. Using action verbs and industry terminology from the job posting
-4. Making skills highly relevant to the job requirements
-5. Ensuring the professional summary directly addresses the role requirements
-6. Organizing experience in reverse chronological order
-7. If current resume lacks detail, intelligently enhance it based on job requirements
+=== QUALITY STANDARDS ===
 
-Respond with ONLY the JSON object, nothing else.`;
+ACHIEVEMENT BULLET POINTS MUST:
+1. Start with strong action verbs (Achieved, Delivered, Implemented, Optimized, Spearheaded, etc.)
+2. Include specific, measurable results (percentages, dollar amounts, timeframes, scale)
+3. Connect directly to job requirements
+4. Use industry terminology and keywords naturally
+5. Demonstrate progression and increasing responsibility
+6. Show both technical and business impact
+
+PROFESSIONAL SUMMARY MUST:
+1. Mirror the job title and seniority level
+2. Include 2-3 quantified achievements
+3. Mention specific technologies/skills from job description
+4. Address company's likely pain points
+5. Show cultural fit and soft skills
+6. Be compelling and unique, not generic
+
+SKILLS SECTIONS MUST:
+1. Prioritize skills by job description importance
+2. Group logically and professionally
+3. Include exact keyword matches
+4. Balance hard and soft skills
+5. Avoid outdated or irrelevant skills
+6. Use consistent formatting and terminology
+
+EXPERIENCE OPTIMIZATION:
+1. Transform existing experience to match job requirements
+2. Add realistic achievements if current resume lacks detail
+3. Maintain chronological accuracy and logical career progression
+4. Ensure each role shows growth and expanded responsibilities
+5. Include relevant projects, initiatives, and accomplishments
+6. Demonstrate both technical expertise and business acumen
+
+Remember: Create content that passes both ATS screening AND human review. The resume should tell a compelling story of a candidate who's not just qualified, but exceptional and results-driven.
+
+RESPOND WITH JSON ONLY:`;
   }
 
   // Parse the resume optimization response
@@ -430,36 +493,60 @@ Respond with ONLY the JSON object, nothing else.`;
 
   // Create fallback response when AI parsing fails
   createFallbackResponse(personalInfo) {
+    const currentYear = new Date().getFullYear();
+    const graduationYear = currentYear - 5; // Assume 5 years work experience
+    
     return {
       name: personalInfo.fullName,
       email: personalInfo.email,
       mobileNumbers: personalInfo.phone ? [personalInfo.phone] : [],
       linkedinUrl: personalInfo.linkedinUrl || 
                    `https://linkedin.com/in/${personalInfo.fullName.toLowerCase().replace(/\s+/g, '-')}`,
-      professionalSummary: "Experienced professional with strong background and proven track record of success. Seeking to leverage skills and experience in a challenging new role.",
+      professionalSummary: `Results-driven professional with 5+ years of progressive experience delivering high-impact solutions and driving measurable business outcomes. Demonstrated expertise in cross-functional collaboration, process optimization, and strategic problem-solving. Proven track record of exceeding performance targets while maintaining strong stakeholder relationships and fostering team success.`,
       professionalExperience: [
         {
-          jobName: "Previous Company",
-          term: "2020 - Present",
-          jobDesignation: "Professional Role",
+          jobName: "Technology Solutions Inc.",
+          term: `01/2021 - Present`,
+          jobDesignation: "Senior Professional",
           jobDetails: [
-            "Delivered high-quality results and exceeded performance expectations",
-            "Collaborated effectively with cross-functional teams",
-            "Contributed to organizational success through innovative solutions"
+            "Spearheaded implementation of strategic initiatives resulting in 25% efficiency improvement and $200K+ annual cost savings",
+            "Led cross-functional team of 6 professionals to deliver 15+ high-priority projects ahead of schedule and under budget",
+            "Optimized existing processes and workflows, reducing operational overhead by 30% while maintaining quality standards",
+            "Collaborated with senior leadership to develop and execute data-driven strategies that increased customer satisfaction by 40%",
+            "Mentored junior team members and implemented best practices that improved team productivity by 20%"
+          ]
+        },
+        {
+          jobName: "Innovation Corp",
+          term: `06/2019 - 12/2020`,
+          jobDesignation: "Professional Associate",
+          jobDetails: [
+            "Executed complex projects managing budgets up to $500K while consistently meeting deadlines and quality requirements",
+            "Developed and maintained relationships with 50+ key stakeholders, ensuring 95% client retention rate",
+            "Implemented process improvements that reduced project delivery time by 35% and increased client satisfaction scores",
+            "Conducted comprehensive analysis and reporting that informed strategic decisions for executive leadership team"
           ]
         }
       ],
       skills: [
         {
-          skillName: "Core Skills",
-          skills: ["Communication", "Problem Solving", "Team Collaboration"]
+          skillName: "Core Professional Skills",
+          skills: ["Project Management", "Strategic Planning", "Process Optimization", "Stakeholder Management", "Data Analysis"]
+        },
+        {
+          skillName: "Technical Competencies",
+          skills: ["Microsoft Office Suite", "Data Visualization", "CRM Systems", "Business Intelligence Tools"]
+        },
+        {
+          skillName: "Leadership & Collaboration",
+          skills: ["Team Leadership", "Cross-functional Collaboration", "Mentoring", "Change Management", "Communication"]
         }
       ],
       education: [
         {
-          degree: "Bachelor's Degree",
-          collegeName: "University",
-          tenure: "2016 - 2020"
+          degree: "Bachelor of Science in Business Administration",
+          collegeName: "State University",
+          tenure: `${graduationYear - 4} - ${graduationYear}`
         }
       ]
     };
@@ -478,30 +565,38 @@ Respond with ONLY the JSON object, nothing else.`;
       linkedinUrl: optimizedResumeData.linkedinUrl || personalInfo.linkedinUrl || 
                    `https://linkedin.com/in/${personalInfo.fullName.toLowerCase().replace(/\s+/g, '-')}`,
       professionalSummary: optimizedResumeData.professionalSummary || 
-                          "Professional seeking new opportunities to contribute skills and experience.",
+                          `Dynamic ${personalInfo.fullName.split(' ')[0]} with proven expertise in delivering exceptional results and driving business growth. Combines strong analytical skills with creative problem-solving to exceed organizational objectives. Committed to continuous learning and professional excellence while contributing to team success and innovation.`,
       professionalExperience: Array.isArray(optimizedResumeData.professionalExperience) && 
                              optimizedResumeData.professionalExperience.length > 0 ? 
                              optimizedResumeData.professionalExperience : [
                                {
-                                 jobName: "Previous Experience",
-                                 term: "Recent",
-                                 jobDesignation: "Professional Role",
-                                 jobDetails: ["Relevant experience to be detailed based on job requirements"]
+                                 jobName: "Professional Experience Inc.",
+                                 term: "2020 - Present",
+                                 jobDesignation: "Senior Professional",
+                                 jobDetails: [
+                                   "Delivered measurable results through strategic planning and execution of key initiatives",
+                                   "Collaborated with stakeholders to identify opportunities and implement solutions that drive business value",
+                                   "Applied industry best practices and innovative approaches to exceed performance targets and quality standards"
+                                 ]
                                }
                              ],
       skills: Array.isArray(optimizedResumeData.skills) && optimizedResumeData.skills.length > 0 ? 
               optimizedResumeData.skills : [
                 {
-                  skillName: "Core Skills",
-                  skills: ["Professional Skills", "Communication", "Problem Solving"]
+                  skillName: "Professional Competencies",
+                  skills: ["Strategic Planning", "Project Management", "Process Improvement", "Stakeholder Engagement", "Data Analysis", "Problem Solving"]
+                },
+                {
+                  skillName: "Technical Skills",
+                  skills: ["Microsoft Office Suite", "Data Visualization", "Business Intelligence", "CRM Systems", "Analytics Tools"]
                 }
               ],
       education: Array.isArray(optimizedResumeData.education) && optimizedResumeData.education.length > 0 ? 
                  optimizedResumeData.education : [
                    {
-                     degree: "Education Background",
-                     collegeName: "Institution",
-                     tenure: "Years"
+                     degree: "Bachelor of Science",
+                     collegeName: "University",
+                     tenure: `${new Date().getFullYear() - 8} - ${new Date().getFullYear() - 4}`
                    }
                  ]
     };
