@@ -29,7 +29,7 @@ router.post('/optimize-resume-json', authenticateToken, asyncHandler(async (req,
   // If profileUuid is provided, fetch profile data
   if (profileUuid) {
     const profile = await dbUtils.get(
-      'SELECT * FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+      'SELECT * FROM user_profiles WHERE profile_uuid = $1 AND user_id = $2',
       [profileUuid, req.user.userId]
     );
 
@@ -48,7 +48,7 @@ router.post('/optimize-resume-json', authenticateToken, asyncHandler(async (req,
   // If templateUuid is provided, fetch template data
   if (templateUuid && !finalResumeText.trim()) {
     const template = await dbUtils.get(
-      'SELECT * FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+      'SELECT * FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
       [templateUuid, req.user.userId]
     );
 
@@ -103,7 +103,7 @@ Education:
     const optimizedContent = JSON.stringify(structuredResponse, null, 2);
     
     const result = await dbUtils.run(
-      'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
+      'UPDATE resumes SET optimized_resume_content = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = $3 AND user_id = $4',
       [optimizedContent, 'optimized', resumeUuid, req.user.userId]
     );
 
@@ -145,7 +145,7 @@ router.post('/save-structured-resume', authenticateToken, asyncHandler(async (re
   const optimizedContent = JSON.stringify(structuredData, null, 2);
 
   const result = await dbUtils.run(
-    'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
+    'UPDATE resumes SET optimized_resume_content = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = $3 AND user_id = $4',
     [optimizedContent, 'optimized', resumeUuid, req.user.userId]
   );
 

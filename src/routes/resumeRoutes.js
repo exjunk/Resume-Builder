@@ -203,7 +203,7 @@ router.post('/optimize', authenticateToken, asyncHandler(async (req, res) => {
   // If profileUuid is provided, fetch profile data
   if (profileUuid) {
     const profile = await dbUtils.get(
-      'SELECT * FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+      'SELECT * FROM user_profiles WHERE profile_uuid = $1 AND user_id = $2',
       [profileUuid, req.user.userId]
     );
 
@@ -222,7 +222,7 @@ router.post('/optimize', authenticateToken, asyncHandler(async (req, res) => {
   // If templateUuid is provided, fetch template data
   if (templateUuid && !finalResumeText.trim()) {
     const template = await dbUtils.get(
-      'SELECT * FROM resume_templates WHERE template_uuid = ? AND user_id = ?',
+      'SELECT * FROM resume_templates WHERE template_uuid = $1 AND user_id = $2',
       [templateUuid, req.user.userId]
     );
 
@@ -277,7 +277,7 @@ Education:
     const optimizedContent = JSON.stringify(structuredResponse, null, 2);
     
     const result = await dbUtils.run(
-      'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
+      'UPDATE resumes SET optimized_resume_content = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = $3 AND user_id = $4',
       [optimizedContent, 'optimized', resumeUuid, req.user.userId]
     );
 
@@ -314,7 +314,7 @@ router.post('/save-structured', authenticateToken, asyncHandler(async (req, res)
   const optimizedContent = JSON.stringify(structuredData, null, 2);
 
   const result = await dbUtils.run(
-    'UPDATE resumes SET optimized_resume_content = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = ? AND user_id = ?',
+    'UPDATE resumes SET optimized_resume_content = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE resume_uuid = $3 AND user_id = $4',
     [optimizedContent, 'optimized', resumeUuidValidated, req.user.userId]
   );
 
@@ -335,7 +335,7 @@ router.post('/:resumeUuid/duplicate', authenticateToken, asyncHandler(async (req
   
   // Get the original resume
   const originalResume = await dbUtils.get(
-    'SELECT * FROM resumes WHERE resume_uuid = ? AND user_id = ?',
+    'SELECT * FROM resumes WHERE resume_uuid = $1 AND user_id = $2',
     [resumeUuid, req.user.userId]
   );
 
@@ -351,7 +351,7 @@ router.post('/:resumeUuid/duplicate', authenticateToken, asyncHandler(async (req
     `INSERT INTO resumes 
      (resume_uuid, user_id, profile_id, template_id, resume_title, company_name, job_id, job_url, 
       job_posting_company, job_description, original_resume_content, optimized_resume_content, status) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
     [
       newResumeUuid,
       req.user.userId,
@@ -381,21 +381,21 @@ router.post('/:resumeUuid/duplicate', authenticateToken, asyncHandler(async (req
 router.get('/stats/overview', authenticateToken, asyncHandler(async (req, res) => {
   // Get total count by status
   const statusStats = await dbUtils.all(
-    'SELECT status, COUNT(*) as count FROM resumes WHERE user_id = ? GROUP BY status',
+    'SELECT status, COUNT(*) as count FROM resumes WHERE user_id = $1 GROUP BY status',
     [req.user.userId]
   );
 
   // Get recent activity (last 30 days)
   const recentActivity = await dbUtils.get(
     `SELECT COUNT(*) as count FROM resumes 
-     WHERE user_id = ? AND created_at >= datetime('now', '-30 days')`,
+     WHERE user_id = $1 AND created_at >= NOW() - INTERVAL '30 days'`,
     [req.user.userId]
   );
 
   // Get most used companies
   const topCompanies = await dbUtils.all(
     `SELECT company_name, COUNT(*) as count FROM resumes 
-     WHERE user_id = ? GROUP BY company_name ORDER BY count DESC LIMIT 5`,
+     WHERE user_id = $1 GROUP BY company_name ORDER BY count DESC LIMIT 5`,
     [req.user.userId]
   );
 

@@ -112,9 +112,9 @@ router.put('/:profileUuid', authenticateToken, asyncHandler(async (req, res) => 
   const updateProfile = async () => {
     const result = await dbUtils.run(
       `UPDATE user_profiles SET 
-       profile_name = ?, full_name = ?, email = ?, mobile_numbers = ?, 
-       linkedin_url = ?, location = ?, is_default = ?, updated_at = CURRENT_TIMESTAMP 
-       WHERE profile_uuid = ? AND user_id = ?`,
+       profile_name = $1, full_name = $2, email = $3, mobile_numbers = $4, 
+       linkedin_url = $5, location = $6, is_default = $7, updated_at = CURRENT_TIMESTAMP 
+       WHERE profile_uuid = $8 AND user_id = $9`,
       [
         validatedData.profileName,
         validatedData.fullName,
@@ -134,7 +134,7 @@ router.put('/:profileUuid', authenticateToken, asyncHandler(async (req, res) => 
   // If this is set as default, unset other defaults first
   if (validatedData.isDefault) {
     await dbUtils.run(
-      'UPDATE user_profiles SET is_default = 0 WHERE user_id = ? AND profile_uuid != ?',
+      'UPDATE user_profiles SET is_default = 0 WHERE user_id = $1 AND profile_uuid != $2',
       [req.user.userId, profileUuid]
     );
   }
@@ -157,7 +157,7 @@ router.delete('/:profileUuid', authenticateToken, asyncHandler(async (req, res) 
 
   // Check if profile exists and get its default status
   const profile = await dbUtils.get(
-    'SELECT is_default FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+    'SELECT is_default FROM user_profiles WHERE profile_uuid = $1 AND user_id = $2',
     [profileUuid, req.user.userId]
   );
 
@@ -168,7 +168,7 @@ router.delete('/:profileUuid', authenticateToken, asyncHandler(async (req, res) 
   // Check if there are other profiles before deleting the default
   if (profile.is_default) {
     const profileCount = await dbUtils.get(
-      'SELECT COUNT(*) as count FROM user_profiles WHERE user_id = ?',
+      'SELECT COUNT(*) as count FROM user_profiles WHERE user_id = $1',
       [req.user.userId]
     );
 
@@ -176,7 +176,7 @@ router.delete('/:profileUuid', authenticateToken, asyncHandler(async (req, res) 
       // Set another profile as default before deleting
       await dbUtils.run(
         `UPDATE user_profiles SET is_default = 1 
-         WHERE user_id = ? AND profile_uuid != ? 
+         WHERE user_id = $1 AND profile_uuid != $2 
          ORDER BY created_at ASC LIMIT 1`,
         [req.user.userId, profileUuid]
       );
@@ -185,7 +185,7 @@ router.delete('/:profileUuid', authenticateToken, asyncHandler(async (req, res) 
 
   // Delete the profile
   const result = await dbUtils.run(
-    'DELETE FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+    'DELETE FROM user_profiles WHERE profile_uuid = $1 AND user_id = $2',
     [profileUuid, req.user.userId]
   );
 
@@ -205,7 +205,7 @@ router.patch('/:profileUuid/set-default', authenticateToken, asyncHandler(async 
 
   // Check if profile exists
   const profile = await dbUtils.get(
-    'SELECT id FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+    'SELECT id FROM user_profiles WHERE profile_uuid = $1 AND user_id = $2',
     [profileUuid, req.user.userId]
   );
 
@@ -219,13 +219,13 @@ router.patch('/:profileUuid/set-default', authenticateToken, asyncHandler(async 
   try {
     // Unset all defaults for this user
     await dbUtils.run(
-      'UPDATE user_profiles SET is_default = 0 WHERE user_id = ?',
+      'UPDATE user_profiles SET is_default = 0 WHERE user_id = $1',
       [req.user.userId]
     );
 
     // Set the selected profile as default
     await dbUtils.run(
-      'UPDATE user_profiles SET is_default = 1 WHERE profile_uuid = ? AND user_id = ?',
+      'UPDATE user_profiles SET is_default = 1 WHERE profile_uuid = $1 AND user_id = $2',
       [profileUuid, req.user.userId]
     );
 
@@ -250,7 +250,7 @@ router.post('/:profileUuid/duplicate', authenticateToken, asyncHandler(async (re
   
   // Get the original profile
   const originalProfile = await dbUtils.get(
-    'SELECT * FROM user_profiles WHERE profile_uuid = ? AND user_id = ?',
+    'SELECT * FROM user_profiles WHERE profile_uuid = $1 AND user_id = $2',
     [profileUuid, req.user.userId]
   );
 
@@ -266,7 +266,7 @@ router.post('/:profileUuid/duplicate', authenticateToken, asyncHandler(async (re
     `INSERT INTO user_profiles 
      (profile_uuid, user_id, profile_name, full_name, email, mobile_numbers, 
       linkedin_url, location, is_default) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       newProfileUuid,
       req.user.userId,
